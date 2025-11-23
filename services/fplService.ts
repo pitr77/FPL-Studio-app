@@ -9,27 +9,37 @@ const BASE_URL = 'https://fantasy.premierleague.com/api';
 async function fetchViaProxy(url: string) {
   const encodedUrl = encodeURIComponent(url);
   
-  // Strategy 1: corsproxy.io (Preferred - Direct JSON)
+  // Strategy 1: corsproxy.io (Fastest, usually works)
   try {
     const proxyUrl = `https://corsproxy.io/?${encodedUrl}`;
     const response = await fetch(proxyUrl);
     if (!response.ok) throw new Error(`Status ${response.status}`);
     return await response.json();
-  } catch (primaryError) {
-    console.warn('Primary proxy (corsproxy.io) failed, attempting fallback...', primaryError);
+  } catch (err1) {
+    console.warn('Proxy 1 (corsproxy.io) failed, trying fallback...', err1);
   }
 
-  // Strategy 2: allorigins.win (Fallback - JSONP style)
+  // Strategy 2: allorigins.win (Reliable JSONP-style)
   try {
     const proxyUrl = `https://api.allorigins.win/get?url=${encodedUrl}`;
     const response = await fetch(proxyUrl);
     if (!response.ok) throw new Error(`Status ${response.status}`);
     const data = await response.json();
-    // allorigins returns the actual response body in 'contents'
+    if (!data.contents) throw new Error("No content in response");
     return JSON.parse(data.contents);
-  } catch (secondaryError) {
-    console.error('All proxy strategies failed:', secondaryError);
-    throw new Error('Failed to connect to FPL API via proxies. Please check your internet connection.');
+  } catch (err2) {
+    console.warn('Proxy 2 (allorigins) failed, trying fallback...', err2);
+  }
+
+  // Strategy 3: codetabs (Last resort)
+  try {
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodedUrl}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    return await response.json();
+  } catch (err3) {
+    console.error('All proxy strategies failed:', err3);
+    throw new Error('Failed to connect to FPL API via proxies. This may happen on free hosting if proxies rate-limit the domain. Please try refreshing later.');
   }
 }
 

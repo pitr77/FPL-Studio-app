@@ -1,7 +1,23 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { FPLPlayer, FPLTeam, FPLEvent, FPLFixture } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to securely get the API Key from various environment configurations
+const getApiKey = () => {
+  // Check standard process.env (Node/Webpack/CRA)
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  // Check Vite specific env
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
+    // @ts-ignore
+    return import.meta.env.VITE_API_KEY;
+  }
+  return undefined;
+};
+
+const apiKey = getApiKey();
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 // Helper to format player list for prompt to save tokens
 const formatPlayersForPrompt = (players: FPLPlayer[], teams: FPLTeam[]) => {
@@ -18,8 +34,8 @@ export async function createScoutChatSession(
   events: FPLEvent[],
   userTeam: FPLPlayer[]
 ) {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key missing");
+  if (!ai) {
+    throw new Error("API Key missing. Please set API_KEY (or VITE_API_KEY) in your Vercel Environment Variables.");
   }
 
   // 1. Prepare Context Data
@@ -86,7 +102,7 @@ export async function getScoutAdvice(
   userTeam: FPLPlayer[]
 ): Promise<{ analysis: string; captain: string; differential: string }> {
   
-  if (!process.env.API_KEY) {
+  if (!ai) {
     return {
         analysis: "API Key missing. Cannot generate advice.",
         captain: "N/A",

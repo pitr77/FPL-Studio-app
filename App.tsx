@@ -9,7 +9,7 @@ import PlayerStats from './components/PlayerStats';
 import TopManagers from './components/TopManagers';
 import LeagueTable from './components/LeagueTable';
 import TransferPicks from './components/TransferPicks';
-import ScoutChat from './components/ScoutChat';
+// import ScoutChat from './components/ScoutChat'; // Temporarily disabled
 import { LayoutDashboard, Calendar, Shirt, BarChart2, BrainCircuit, Menu, X, RefreshCw, Users, Trophy, ArrowLeftRight } from 'lucide-react';
 
 enum View {
@@ -125,7 +125,7 @@ function App() {
             <NavItem v={View.TEAM} label="My Team" icon={Shirt} />
             <NavItem v={View.STATS} label="Statistics" icon={BarChart2} />
             <NavItem v={View.TOP_MANAGERS} label="Top 100 Managers" icon={Users} />
-            <NavItem v={View.SCOUT} label="AI Scout" icon={BrainCircuit} />
+            {/* <NavItem v={View.SCOUT} label="AI Scout" icon={BrainCircuit} /> */}
          </nav>
          
          <div className="p-6 border-t border-slate-800 shrink-0 bg-slate-900">
@@ -153,7 +153,7 @@ function App() {
 
            {view === View.TOP_MANAGERS && <TopManagers players={data.elements} teams={data.teams} />}
 
-           {view === View.SCOUT && (
+           {/* {view === View.SCOUT && (
               <ScoutChat 
                 players={data.elements}
                 teams={data.teams}
@@ -161,7 +161,7 @@ function App() {
                 events={data.events}
                 myTeam={myTeam}
               />
-           )}
+           )} */}
 
          </div>
       </main>

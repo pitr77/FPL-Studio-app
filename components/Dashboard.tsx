@@ -24,7 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, myTeam }) => {
           <div className="relative z-10">
              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Welcome to FPL Mastermind</h1>
              <p className="text-purple-200 text-lg max-w-2xl">
-               The ultimate portal for Fantasy Premier League statistics, team planning, and AI-powered scouting.
+               The ultimate portal for Fantasy Premier League statistics, team planning, and advanced analytics.
              </p>
              
              {nextEvent && (
@@ -109,7 +109,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, myTeam }) => {
                 </li>
                 <li className="flex items-start gap-2">
                    <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold mt-0.5">4</span>
-                   <span>Ask the <strong>AI Scout</strong> for personalized transfer advice.</span>
+                   <span>Check <strong>Transfer Picks</strong> for data-driven recommendations.</span>
                 </li>
              </ul>
           </div>
