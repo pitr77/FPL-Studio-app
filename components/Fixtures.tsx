@@ -63,18 +63,28 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
       const homeWon = homeScore > awayScore;
       const awayWon = awayScore > homeScore;
       
-      const homeStrength = awayDiff.threat; 
-      const awayStrength = homeDiff.threat; 
-      const gap = 10;
+      // If a team wins against Easy(1) or Good(2) opposition, it's expected.
+      // Or if a team loses against Hard(4)/Very Hard(5), it's expected.
+      
+      const homeExpectedWin = homeDiff.score <= 2;
+      const awayExpectedWin = awayDiff.score <= 2;
+
+      // New simpler logic based on gaps
+      const homeStrength = awayDiff.threat;
+      const awayStrength = homeDiff.threat;
+      const gap = 5; // Reduced gap threshold
 
       if (homeStrength > awayStrength + gap) {
-          // Home is favorite
-          if (homeWon) return { color: 'text-green-500', icon: CheckCircle2, label: 'Expected' };
-          if (awayWon) return { color: 'text-red-500', icon: AlertTriangle, label: 'Upset' };
+           if (homeWon) return { color: 'text-green-500', icon: CheckCircle2, label: 'Expected' };
+           if (awayWon) return { color: 'text-red-500', icon: AlertTriangle, label: 'Upset' };
       } else if (awayStrength > homeStrength + gap) {
-          // Away is favorite
-          if (awayWon) return { color: 'text-green-500', icon: CheckCircle2, label: 'Expected' };
-          if (homeWon) return { color: 'text-red-500', icon: AlertTriangle, label: 'Upset' };
+           if (awayWon) return { color: 'text-green-500', icon: CheckCircle2, label: 'Expected' };
+           if (homeWon) return { color: 'text-red-500', icon: AlertTriangle, label: 'Upset' };
+      } else {
+           // Close game logic
+           // If visual difficulty was green and they won -> Expected
+           if (homeWon && homeDiff.score <= 2) return { color: 'text-green-500', icon: CheckCircle2, label: 'Expected' };
+           if (awayWon && awayDiff.score <= 2) return { color: 'text-green-500', icon: CheckCircle2, label: 'Expected' };
       }
 
       return { color: 'text-slate-600', icon: Activity, label: 'Neutral' };
@@ -196,7 +206,7 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
   const renderFormGuide = (form: string[]) => (
       <div className="flex flex-col items-center justify-center py-2 h-full w-full">
           {/* Container for the badges - Simplified */}
-          <div className="flex flex-col gap-1 p-1 rounded border border-white/20 w-7 bg-black/10">
+          <div className="flex flex-col gap-0.5 p-0.5 rounded border border-white/20 w-5 md:w-7 bg-black/10">
               {[...form].reverse().map((res, i) => {
                   let color = 'bg-slate-700 border-slate-600';
                   if (res === 'W') color = 'bg-green-500 border-green-400 text-white shadow-sm';
@@ -204,7 +214,7 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                   if (res === 'D') color = 'bg-slate-500 border-slate-400 text-white';
                   
                   return (
-                      <div key={i} className={`w-5 h-4 text-[9px] font-bold flex items-center justify-center rounded-sm border ${color} mx-auto`}>
+                      <div key={i} className={`w-3 h-3 md:w-5 md:h-4 text-[7px] md:text-[9px] font-bold flex items-center justify-center rounded-sm border ${color} mx-auto`}>
                           {res}
                       </div>
                   )
@@ -276,60 +286,60 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
             return (
                 <div key={fixture.id} className="relative bg-slate-800 rounded-lg border border-slate-700 shadow-sm hover:border-slate-500 transition-all group z-0 hover:z-10 overflow-visible">
                     
-                    {/* WIDE Difficulty Bars with Form Inside - width 3rem (w-12) */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-12 rounded-l-lg ${homeDiff.bg} shadow-inner border-r border-black/10`}>
+                    {/* WIDE Difficulty Bars with Form Inside - width 3rem (w-12) on desktop, w-8 on mobile */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-8 md:w-12 rounded-l-lg ${homeDiff.bg} shadow-inner border-r border-black/10`}>
                         {renderFormGuide(homeForm)}
                     </div>
                     
-                    <div className={`absolute right-0 top-0 bottom-0 w-12 rounded-r-lg ${awayDiff.bg} shadow-inner border-l border-black/10`}>
+                    <div className={`absolute right-0 top-0 bottom-0 w-8 md:w-12 rounded-r-lg ${awayDiff.bg} shadow-inner border-l border-black/10`}>
                         {renderFormGuide(awayForm)}
                     </div>
 
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-center p-4 pl-16 pr-16 h-28">
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center p-4 pl-10 pr-10 md:pl-16 md:pr-16 h-28 gap-2">
                         
                         {/* Home Team */}
-                        <div className="flex items-center justify-end gap-3 text-right">
-                            <div className="flex flex-col items-end">
-                                <span className="font-bold text-slate-100 text-lg md:text-xl leading-tight">
+                        <div className="flex items-center justify-end gap-3 text-right overflow-hidden">
+                            <div className="flex flex-col items-end min-w-0">
+                                <span className="font-bold text-slate-100 text-sm md:text-xl leading-tight truncate w-full text-right">
                                     {getTeamName(fixture.team_h)}
                                 </span>
-                                <span className={`text-[10px] uppercase font-bold px-1.5 rounded mt-1 ${homeDiff.bg.replace('bg-', 'text-')}`}>
-                                    Opponent: {homeDiff.label}
+                                <span className={`text-[9px] md:text-[10px] uppercase font-bold px-1.5 rounded mt-1 ${homeDiff.bg.replace('bg-', 'text-')} truncate`}>
+                                    Op: {homeDiff.label}
                                 </span>
                             </div>
                         </div>
                         
                         {/* Score / Time */}
-                        <div className="flex flex-col items-center min-w-[120px] px-2 relative">
+                        <div className="flex flex-col items-center min-w-[80px] md:min-w-[120px] px-2 relative">
                             {fixture.finished ? (
                                 <>
-                                    <div className="bg-slate-900 px-4 py-1.5 rounded border border-slate-600 mb-1 shadow-inner">
-                                        <div className="text-2xl font-bold text-white tracking-widest font-mono">
+                                    <div className="bg-slate-900 px-2 md:px-4 py-1.5 rounded border border-slate-600 mb-1 shadow-inner">
+                                        <div className="text-xl md:text-2xl font-bold text-white tracking-widest font-mono">
                                             {fixture.team_h_score} - {fixture.team_a_score}
                                         </div>
                                     </div>
                                     {fdrCheck && (
-                                        <div className={`flex items-center gap-1 text-[10px] uppercase font-bold ${fdrCheck.color}`}>
+                                        <div className={`flex items-center gap-1 text-[9px] md:text-[10px] uppercase font-bold ${fdrCheck.color} whitespace-nowrap`}>
                                             <fdrCheck.icon size={12} /> {fdrCheck.label}
                                         </div>
                                     )}
                                 </>
                             ) : (
                                 <div className="text-center">
-                                    <div className="text-white font-bold text-lg">{new Date(fixture.kickoff_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                                    <div className="text-xs text-slate-500 uppercase font-bold">{new Date(fixture.kickoff_time).toLocaleDateString([], {weekday: 'short', day: 'numeric'})}</div>
+                                    <div className="text-white font-bold text-base md:text-lg">{new Date(fixture.kickoff_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                    <div className="text-[10px] md:text-xs text-slate-500 uppercase font-bold">{new Date(fixture.kickoff_time).toLocaleDateString([], {weekday: 'short', day: 'numeric'})}</div>
                                 </div>
                             )}
                         </div>
 
                         {/* Away Team */}
-                        <div className="flex items-center justify-start gap-3 text-left">
-                            <div className="flex flex-col items-start">
-                                <span className="font-bold text-slate-100 text-lg md:text-xl leading-tight">
+                        <div className="flex items-center justify-start gap-3 text-left overflow-hidden">
+                            <div className="flex flex-col items-start min-w-0">
+                                <span className="font-bold text-slate-100 text-sm md:text-xl leading-tight truncate w-full">
                                     {getTeamName(fixture.team_a)}
                                 </span>
-                                <span className={`text-[10px] uppercase font-bold px-1.5 rounded mt-1 ${awayDiff.bg.replace('bg-', 'text-')}`}>
-                                    Opponent: {awayDiff.label}
+                                <span className={`text-[9px] md:text-[10px] uppercase font-bold px-1.5 rounded mt-1 ${awayDiff.bg.replace('bg-', 'text-')} truncate`}>
+                                    Op: {awayDiff.label}
                                 </span>
                             </div>
                         </div>

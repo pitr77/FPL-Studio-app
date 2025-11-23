@@ -80,6 +80,9 @@ const TeamBuilder: React.FC<TeamBuilderProps> = ({ allPlayers, teams, events, my
                   if (player) importedPlayers.push(player);
               });
               setMyTeam(importedPlayers);
+              // Store ID for persistence
+              localStorage.setItem('fpl_team_id', teamIdInput);
+              // Trigger a re-render/event if needed in App, but App reads from localStorage on load
           } else {
               setImportError("Could not find picks for this ID.");
           }
@@ -96,10 +99,10 @@ const TeamBuilder: React.FC<TeamBuilderProps> = ({ allPlayers, teams, events, my
       return (
         <button 
           onClick={() => openPlayerSelect(type)}
-          className="w-20 h-24 md:w-24 md:h-32 bg-slate-800/50 hover:bg-slate-800/80 border-2 border-dashed border-slate-500 rounded flex flex-col items-center justify-center transition-all group"
+          className="w-14 h-20 sm:w-20 sm:h-24 md:w-24 md:h-32 bg-slate-800/50 hover:bg-slate-800/80 border-2 border-dashed border-slate-500 rounded flex flex-col items-center justify-center transition-all group"
         >
-          <Plus className="w-8 h-8 text-slate-400 group-hover:text-green-400" />
-          <span className="text-xs font-bold text-slate-400 mt-1">{POSITION_MAP[type]}</span>
+          <Plus className="w-6 h-6 md:w-8 md:h-8 text-slate-400 group-hover:text-green-400" />
+          <span className="text-[10px] md:text-xs font-bold text-slate-400 mt-1">{POSITION_MAP[type]}</span>
         </button>
       );
     }
@@ -107,7 +110,7 @@ const TeamBuilder: React.FC<TeamBuilderProps> = ({ allPlayers, teams, events, my
     const teamObj = teams.find(t => t.id === player.team);
 
     return (
-      <div className="relative w-20 h-28 md:w-24 md:h-36 flex flex-col items-center group">
+      <div className="relative w-14 h-24 sm:w-20 sm:h-28 md:w-24 md:h-36 flex flex-col items-center group">
         <button 
           onClick={() => handleRemovePlayer(player.id)}
           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg scale-75 md:scale-100"
@@ -122,15 +125,15 @@ const TeamBuilder: React.FC<TeamBuilderProps> = ({ allPlayers, teams, events, my
                 className="h-full object-cover translate-y-2"
                 onError={(e) => { (e.target as HTMLImageElement).src = 'https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-66.png'; }} 
               />
-              <div className="absolute top-1 right-1 bg-slate-900/80 text-[10px] text-green-400 font-mono px-1 rounded">
+              <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-slate-900/80 text-[8px] sm:text-[10px] text-green-400 font-mono px-1 rounded z-10">
                 {player.total_points}
               </div>
            </div>
-           <div className="h-1/3 bg-slate-900 p-1 text-center">
-              <div className="text-xs font-bold text-white truncate">{player.web_name}</div>
-              <div className="flex justify-between items-center px-1">
-                 <div className="text-[10px] text-slate-400 uppercase">{teamObj?.short_name}</div>
-                 <div className="text-[10px] font-mono text-green-400">£{player.now_cost / 10}</div>
+           <div className="h-1/3 bg-slate-900 p-0.5 sm:p-1 text-center flex flex-col justify-center">
+              <div className="text-[9px] sm:text-xs font-bold text-white truncate px-0.5">{player.web_name}</div>
+              <div className="flex justify-between items-center px-0.5 sm:px-1 gap-1">
+                 <div className="text-[8px] sm:text-[10px] text-slate-400 uppercase truncate max-w-[50%]">{teamObj?.short_name}</div>
+                 <div className="text-[8px] sm:text-[10px] font-mono text-green-400">£{player.now_cost / 10}</div>
               </div>
            </div>
         </div>
@@ -211,7 +214,7 @@ const TeamBuilder: React.FC<TeamBuilderProps> = ({ allPlayers, teams, events, my
         </div>
 
         {/* The Pitch */}
-        <div className="relative bg-gradient-to-b from-green-800 to-green-700 rounded-xl border-4 border-green-900 shadow-2xl overflow-hidden p-4 md:p-8 min-h-[650px] select-none">
+        <div className="relative bg-gradient-to-b from-green-800 to-green-700 rounded-xl border-4 border-green-900 shadow-2xl overflow-hidden p-2 md:p-8 min-h-[600px] select-none">
           {/* Pitch Markings */}
           <div className="absolute inset-0 opacity-20 pointer-events-none">
              <div className="w-full h-full border-2 border-white m-4 rounded-sm"></div>
@@ -222,7 +225,7 @@ const TeamBuilder: React.FC<TeamBuilderProps> = ({ allPlayers, teams, events, my
           </div>
 
           {/* Formation Grid */}
-          <div className="relative z-10 flex flex-col h-full justify-between gap-2 py-2">
+          <div className="relative z-10 flex flex-col h-full justify-between gap-1 py-4">
             
             {/* GKP */}
             <div className="flex justify-center">
@@ -230,21 +233,21 @@ const TeamBuilder: React.FC<TeamBuilderProps> = ({ allPlayers, teams, events, my
             </div>
 
             {/* DEF */}
-            <div className="flex justify-center gap-2 md:gap-6">
+            <div className="flex justify-center gap-1 md:gap-6">
               {[0, 1, 2, 3].map(i => (
                  <div key={`def-${i}`}>{renderPlayerCard(getPlayerInSlot(2, i), 2)}</div>
               ))}
             </div>
 
              {/* MID */}
-             <div className="flex justify-center gap-2 md:gap-6">
+             <div className="flex justify-center gap-1 md:gap-6">
               {[0, 1, 2, 3].map(i => (
                  <div key={`mid-${i}`}>{renderPlayerCard(getPlayerInSlot(3, i), 3)}</div>
               ))}
             </div>
 
              {/* FWD */}
-             <div className="flex justify-center gap-2 md:gap-6">
+             <div className="flex justify-center gap-1 md:gap-6">
               {[0, 1].map(i => (
                  <div key={`fwd-${i}`}>{renderPlayerCard(getPlayerInSlot(4, i), 4)}</div>
               ))}

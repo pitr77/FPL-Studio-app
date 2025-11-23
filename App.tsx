@@ -9,17 +9,21 @@ import PlayerStats from './components/PlayerStats';
 import TopManagers from './components/TopManagers';
 import LeagueTable from './components/LeagueTable';
 import TransferPicks from './components/TransferPicks';
+import DetailedStats from './components/DetailedStats';
+import OptimalSquad from './components/OptimalSquad';
 // import ScoutChat from './components/ScoutChat'; // Temporarily disabled
-import { LayoutDashboard, Calendar, Shirt, BarChart2, BrainCircuit, Menu, X, RefreshCw, Users, Trophy, ArrowLeftRight } from 'lucide-react';
+import { LayoutDashboard, Calendar, Shirt, BarChart2, BrainCircuit, Menu, X, RefreshCw, Users, Trophy, ArrowLeftRight, Activity, Zap } from 'lucide-react';
 
 enum View {
   DASHBOARD,
   FIXTURES,
   TEAM,
   STATS,
+  DETAILED_STATS,
   TOP_MANAGERS,
   LEAGUE_TABLE,
   TRANSFER_PICKS,
+  OPTIMAL_SQUAD,
   SCOUT
 }
 
@@ -122,8 +126,10 @@ function App() {
             <NavItem v={View.LEAGUE_TABLE} label="League Table" icon={Trophy} />
             <NavItem v={View.FIXTURES} label="Fixtures" icon={Calendar} />
             <NavItem v={View.TRANSFER_PICKS} label="Transfer Picks" icon={ArrowLeftRight} />
+            <NavItem v={View.OPTIMAL_SQUAD} label="Optimal 11" icon={Zap} />
             <NavItem v={View.TEAM} label="My Team" icon={Shirt} />
-            <NavItem v={View.STATS} label="Statistics" icon={BarChart2} />
+            <NavItem v={View.STATS} label="Player Stats" icon={BarChart2} />
+            <NavItem v={View.DETAILED_STATS} label="Detailed Analyses" icon={Activity} />
             <NavItem v={View.TOP_MANAGERS} label="Top 100 Managers" icon={Users} />
             {/* <NavItem v={View.SCOUT} label="AI Scout" icon={BrainCircuit} /> */}
          </nav>
@@ -147,9 +153,13 @@ function App() {
 
            {view === View.TRANSFER_PICKS && <TransferPicks players={data.elements} teams={data.teams} fixtures={fixtures} events={data.events} />}
            
+           {view === View.OPTIMAL_SQUAD && <OptimalSquad players={data.elements} teams={data.teams} />}
+
            {view === View.TEAM && <TeamBuilder allPlayers={data.elements} teams={data.teams} events={data.events} myTeam={myTeam} setMyTeam={setMyTeam} />}
            
            {view === View.STATS && <PlayerStats players={data.elements} teams={data.teams} />}
+
+           {view === View.DETAILED_STATS && <DetailedStats players={data.elements} teams={data.teams} />}
 
            {view === View.TOP_MANAGERS && <TopManagers players={data.elements} teams={data.teams} />}
 

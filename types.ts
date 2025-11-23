@@ -12,6 +12,13 @@ export interface FPLPlayer {
   form: string;
   ict_index: string;
   photo: string;
+  bps: number;
+  influence: string;
+  creativity: string;
+  threat: string;
+  clean_sheets: number;
+  saves: number;
+  penalties_saved: number;
 }
 
 export interface FPLTeam {
