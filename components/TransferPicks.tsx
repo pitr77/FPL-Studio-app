@@ -13,6 +13,8 @@ interface PlayerTransferStats extends FPLPlayer {
   transferIndex: number; // 0.00 - 1.00
   fixtureDifficultySum: number; // Lower is better
   nextFixtures: { event: number; opponent: number; difficulty: number; isHome: boolean }[];
+  eoFormRatio: number;
+  eoPtsRatio: number;
 }
 
 const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures, events }) => {
@@ -110,20 +112,26 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
         // 60% Form, 40% Fixtures? Or 50/50? Let's go 50/50
         const index = (normForm * 0.5) + (normFixtures * 0.5);
 
+        // Ratios
+        const ownership = parseFloat(p.selected_by_percent);
+        const eoFormRatio = formVal > 0 ? ownership / formVal : 0;
+        const eoPtsRatio = p.total_points > 0 ? ownership / p.total_points : 0;
+
         return {
             ...p,
             transferIndex: index,
             fixtureDifficultySum: difficultySum,
-            nextFixtures
+            nextFixtures,
+            eoFormRatio,
+            eoPtsRatio
         } as PlayerTransferStats;
       });
   }, [players, fixtures, events, teamThreatMap]);
 
-  // Top 10 Form Players Calculation
+  // Top Form Players Calculation (All Players sorted by form)
   const topFormPlayers = useMemo(() => {
     return [...processedPlayers]
-        .sort((a, b) => parseFloat(b.form) - parseFloat(a.form))
-        .slice(0, 10);
+        .sort((a, b) => parseFloat(b.form) - parseFloat(a.form));
   }, [processedPlayers]);
 
   // 3. Sorting & Filtering
@@ -265,17 +273,17 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
         )}
       </div>
 
-      {/* Top 10 Form Players Horizontal Scroll */}
+      {/* Top Form Players Horizontal Scroll */}
       <div>
           <h3 className="text-sm font-bold text-slate-400 mb-3 flex items-center gap-2 px-1">
-             <TrendingUp size={16} className="text-green-400" /> Top 10 In-Form Players
+             <TrendingUp size={16} className="text-green-400" /> Top In-Form Players
           </h3>
           <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
               {topFormPlayers.map(p => (
-                  <div key={p.id} className="min-w-[160px] snap-start bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-lg flex flex-col gap-2 relative group hover:border-green-500/50 transition-colors">
+                  <div key={p.id} className="min-w-[220px] snap-start bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-lg flex flex-col gap-2 relative group hover:border-green-500/50 transition-colors">
                       <div className="flex justify-between items-start">
                           <div>
-                              <div className="font-bold text-white text-sm truncate w-24">{p.web_name}</div>
+                              <div className="font-bold text-white text-sm truncate w-32">{p.web_name}</div>
                               <div className="text-[10px] text-slate-500">{getTeamShort(p.team)} • £{p.now_cost/10}</div>
                           </div>
                           <div className="text-right">
@@ -284,6 +292,18 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                           </div>
                       </div>
                       
+                      {/* Ratio Stats */}
+                      <div className="grid grid-cols-2 gap-2 my-1">
+                          <div className="bg-slate-900 p-1.5 rounded border border-slate-700">
+                              <div className="text-[9px] text-slate-500">EO/Form</div>
+                              <div className="text-xs font-mono text-blue-300">{p.eoFormRatio.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-slate-900 p-1.5 rounded border border-slate-700">
+                              <div className="text-[9px] text-slate-500">EO/Pts</div>
+                              <div className="text-xs font-mono text-blue-300">{p.eoPtsRatio.toFixed(2)}</div>
+                          </div>
+                      </div>
+
                       {/* Next 3 Fixtures Visual */}
                       <div className="mt-auto">
                           <div className="text-[9px] text-slate-500 mb-1">Next 3 Fixtures:</div>
@@ -328,6 +348,7 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                      <SortHeader label="Player" sortKey="web_name" className="w-64" />
                      <SortHeader label="Transfer Index" sortKey="transferIndex" className="w-36" />
                      <SortHeader label="Price" sortKey="now_cost" align="right" />
+                     <SortHeader label="Ownership" sortKey="selected_by_percent" align="right" />
                      <SortHeader label="Form" sortKey="form" align="right" />
                      
                      {gwHeaders.map(gw => (
@@ -360,6 +381,7 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                               </div>
                           </td>
                           <td className="p-4 text-right font-mono text-blue-300">£{p.now_cost / 10}</td>
+                          <td className="p-4 text-right font-mono text-slate-300">{p.selected_by_percent}%</td>
                           <td className="p-4 text-right font-bold text-white">{p.form}</td>
                           
                           {/* Fixture Cells */}

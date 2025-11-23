@@ -11,8 +11,10 @@ import LeagueTable from './components/LeagueTable';
 import TransferPicks from './components/TransferPicks';
 import DetailedStats from './components/DetailedStats';
 import OptimalSquad from './components/OptimalSquad';
+import TeamAnalysis from './components/TeamAnalysis';
+import PeriodAnalysis from './components/PeriodAnalysis';
 // import ScoutChat from './components/ScoutChat'; // Temporarily disabled
-import { LayoutDashboard, Calendar, Shirt, BarChart2, BrainCircuit, Menu, X, RefreshCw, Users, Trophy, ArrowLeftRight, Activity, Zap } from 'lucide-react';
+import { LayoutDashboard, Calendar, Shirt, BarChart2, BrainCircuit, Menu, X, RefreshCw, Users, Trophy, ArrowLeftRight, Activity, Zap, Search, CalendarRange } from 'lucide-react';
 
 enum View {
   DASHBOARD,
@@ -24,6 +26,8 @@ enum View {
   LEAGUE_TABLE,
   TRANSFER_PICKS,
   OPTIMAL_SQUAD,
+  TEAM_ANALYSIS,
+  PERIOD_ANALYSIS,
   SCOUT
 }
 
@@ -124,6 +128,8 @@ function App() {
          <nav className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
             <NavItem v={View.DASHBOARD} label="Dashboard" icon={LayoutDashboard} />
             <NavItem v={View.LEAGUE_TABLE} label="League Table" icon={Trophy} />
+            <NavItem v={View.TEAM_ANALYSIS} label="Team Analysis" icon={Search} />
+            <NavItem v={View.PERIOD_ANALYSIS} label="Period Analysis" icon={CalendarRange} />
             <NavItem v={View.FIXTURES} label="Fixtures" icon={Calendar} />
             <NavItem v={View.TRANSFER_PICKS} label="Transfer Picks" icon={ArrowLeftRight} />
             <NavItem v={View.OPTIMAL_SQUAD} label="Optimal 11" icon={Zap} />
@@ -145,9 +151,13 @@ function App() {
       <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 scroll-smooth">
          <div className="max-w-7xl mx-auto h-full">
            
-           {view === View.DASHBOARD && <Dashboard data={data} myTeam={myTeam} />}
+           {view === View.DASHBOARD && <Dashboard data={data} myTeam={myTeam} fixtures={fixtures} />}
            
            {view === View.LEAGUE_TABLE && <LeagueTable teams={data.teams} fixtures={fixtures} />}
+
+           {view === View.TEAM_ANALYSIS && <TeamAnalysis teams={data.teams} fixtures={fixtures} />}
+
+           {view === View.PERIOD_ANALYSIS && <PeriodAnalysis players={data.elements} teams={data.teams} events={data.events} />}
            
            {view === View.FIXTURES && <Fixtures fixtures={fixtures} teams={data.teams} events={data.events} players={data.elements} />}
 

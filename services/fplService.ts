@@ -1,4 +1,4 @@
-import { BootstrapStatic, FPLFixture } from '../types';
+import { BootstrapStatic, FPLFixture, FPLElementSummary } from '../types';
 
 const BASE_URL = 'https://fantasy.premierleague.com/api';
 
@@ -53,6 +53,10 @@ export const getFixtures = async (): Promise<FPLFixture[]> => {
 
 export const getUserPicks = async (teamId: number, eventId: number): Promise<{ picks: { element: number, position: number }[] }> => {
   return fetchViaProxy(`${BASE_URL}/entry/${teamId}/event/${eventId}/picks/`);
+};
+
+export const getPlayerSummary = async (playerId: number): Promise<FPLElementSummary> => {
+  return fetchViaProxy(`${BASE_URL}/element-summary/${playerId}/`);
 };
 
 export const getPlayerImageUrl = (photoCode: string) => {
