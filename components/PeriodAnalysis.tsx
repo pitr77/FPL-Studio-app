@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { FPLPlayer, FPLTeam, FPLEvent } from '../types';
 import { getPlayerSummary } from '../services/fplService';
-import { CalendarRange, RefreshCw, AlertCircle, Info } from 'lucide-react';
+import { CalendarRange, RefreshCw, AlertCircle, Info, TrendingUp, Activity } from 'lucide-react';
 
 interface PeriodAnalysisProps {
   players: FPLPlayer[];
@@ -20,16 +21,26 @@ interface AggregatedStats {
   bonus: number;
   total_points: number;
   ownership: string;
+  median_points: number;
+  consistency: number; // % of games with > 2 points
+  matches_played: number;
 }
 
 const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events }) => {
-  const [fromGw, setFromGw] = useState<number>(1);
-  const [toGw, setToGw] = useState<number>(events.find(e => e.is_current)?.id || 38);
+  // Determine defaults based on current gameweek
+  const currentEventId = events.find(e => e.is_current)?.id || 1;
+  const defaultFrom = Math.max(1, currentEventId - 4); // Last 5 GWs including current
+
+  const [fromGw, setFromGw] = useState<number>(defaultFrom);
+  const [toGw, setToGw] = useState<number>(currentEventId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<AggregatedStats[]>([]);
 
   const gameweeks = events.map(e => e.id);
+
+  // Trigger analysis automatically on mount if we have data, or let user click
+  // keeping manual click for now to save API calls on load
 
   const handleAnalyze = async () => {
     if (fromGw > toGw) {
@@ -57,6 +68,20 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
             h => h.round >= fromGw && h.round <= toGw
           );
 
+          if (relevantHistory.length === 0) return null;
+
+          // Calculate Median
+          const pointsArr = relevantHistory.map(h => h.total_points).sort((a, b) => a - b);
+          let median = 0;
+          if (pointsArr.length > 0) {
+              const mid = Math.floor(pointsArr.length / 2);
+              median = pointsArr.length % 2 !== 0 ? pointsArr[mid] : (pointsArr[mid - 1] + pointsArr[mid]) / 2;
+          }
+
+          // Calculate Consistency (Returns > 2 points)
+          const returns = relevantHistory.filter(h => h.total_points > 2).length;
+          const consistency = (returns / relevantHistory.length) * 100;
+
           // Aggregate stats
           const agg = relevantHistory.reduce((acc, match) => ({
             goals: acc.goals + match.goals_scored,
@@ -72,6 +97,9 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
             team: teams.find(t => t.id === player.team)?.short_name || "UNK",
             element_type: player.element_type,
             ownership: player.selected_by_percent,
+            median_points: median,
+            consistency: consistency,
+            matches_played: relevantHistory.length,
             ...agg
           };
         } catch (err) {
@@ -110,7 +138,9 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
             <p className="text-slate-400 text-sm">
               Analyze player performance over a specific range of Gameweeks.
               <br />
-              <span className="text-xs opacity-70">*Currently limited to the Top 50 active players to optimize performance.</span>
+              <span className="text-xs opacity-70 text-slate-500">
+                Uses <strong>Median</strong> and <strong>Consistency</strong> to filter out "one-hit wonders".
+              </span>
             </p>
           </div>
 
@@ -140,7 +170,7 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
             <button
               onClick={handleAnalyze}
               disabled={loading}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-500/20"
             >
               {loading ? <RefreshCw className="animate-spin" size={18} /> : 'Analyze Period'}
             </button>
@@ -157,9 +187,14 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
       {/* Results Table */}
       {data.length > 0 && (
         <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-lg overflow-hidden">
-          <div className="p-4 border-b border-slate-700 bg-slate-900/30 flex justify-between items-center">
-             <h3 className="font-bold text-white">Top-scoring players, GW{fromGw}-{toGw}</h3>
-             <span className="text-xs text-slate-500">Scroll across for more</span>
+          <div className="p-4 border-b border-slate-700 bg-slate-900/30 flex justify-between items-center flex-wrap gap-2">
+             <h3 className="font-bold text-white flex items-center gap-2">
+               Stats: GW{fromGw}-{toGw}
+             </h3>
+             <div className="flex gap-4 text-[10px] text-slate-400">
+               <span className="flex items-center gap-1"><TrendingUp size={12} className="text-blue-400"/> <strong>Median:</strong> The "Typical" score (removes outliers).</span>
+               <span className="flex items-center gap-1"><Activity size={12} className="text-green-400"/> <strong>Consistency:</strong> % of games with return.</span>
+             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -167,11 +202,13 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
                 <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider">
                   <th className="p-4 w-12 text-center">#</th>
                   <th className="p-4">Player</th>
-                  <th className="p-4 text-right">Ownership</th>
+                  <th className="p-4 text-right">Own</th>
                   <th className="p-4 text-right">G+A</th>
-                  <th className="p-4 text-right">Clean Sheets*</th>
                   <th className="p-4 text-right">Bonus</th>
-                  <th className="p-4 text-right font-bold text-white">Pts</th>
+                  <th className="p-4 text-right text-white font-bold" title="Points per Match Average">Avg</th>
+                  <th className="p-4 text-right text-blue-400 font-bold" title="Median Score (Typical Performance)">Median</th>
+                  <th className="p-4 text-right text-green-400 font-bold" title="% of games with > 2 points">Consist.</th>
+                  <th className="p-4 text-right font-bold text-white">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50 text-sm">
@@ -182,14 +219,23 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
                       <div className="font-bold text-white">{p.web_name}</div>
                       <div className="text-xs text-slate-500">{p.team}</div>
                     </td>
-                    <td className="p-4 text-right font-mono text-blue-300">{p.ownership}%</td>
+                    <td className="p-4 text-right font-mono text-slate-400">{p.ownership}%</td>
                     <td className="p-4 text-right font-mono text-slate-300">{p.goals + p.assists}</td>
-                    <td className="p-4 text-right font-mono text-slate-300">
-                        {/* Only meaningful for DEF/GKP/MID usually, but we show raw count */}
-                        {p.element_type === 4 ? 'N/A' : p.clean_sheets}
-                    </td>
                     <td className="p-4 text-right font-mono text-yellow-400">{p.bonus}</td>
-                    <td className="p-4 text-right font-bold text-green-400 text-base">{p.total_points}</td>
+                    
+                    <td className="p-4 text-right font-mono text-slate-300">
+                        {(p.total_points / p.matches_played).toFixed(1)}
+                    </td>
+                    
+                    <td className="p-4 text-right font-mono font-bold text-blue-300 bg-blue-900/10 border-l border-r border-slate-700/50">
+                        {p.median_points}
+                    </td>
+                    
+                    <td className="p-4 text-right font-mono font-bold text-green-400">
+                        {p.consistency.toFixed(0)}%
+                    </td>
+
+                    <td className="p-4 text-right font-bold text-white text-base">{p.total_points}</td>
                   </tr>
                 ))}
               </tbody>
@@ -197,7 +243,7 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
           </div>
           <div className="p-3 bg-slate-900/30 text-xs text-slate-500 flex items-center gap-2">
              <Info size={14} />
-             *Defenders earn four points per clean sheet, while midfielders earn one point.
+             *Consistency measures the percentage of games where the player scored more than 2 points (non-blank).
           </div>
         </div>
       )}

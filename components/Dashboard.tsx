@@ -164,7 +164,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, myTeam, fixtures }) => {
        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Team Status Summary */}
           <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
-              <h3 className="text-xl font-bold mb-4 text-white flex items-center gap-2"><Shield className="w-5 h-5 text-purple-400" /> Current Team Status</h3>
+              <h3 className="text-xl font-bold mb-4 text-white flex items-center gap-2"><Shield className="w-5 h-5 text-purple-400" /> Current Team Form Status</h3>
               {myTeam.length === 0 ? (
                  <div className="text-center py-10 text-slate-500 bg-slate-900/50 rounded-lg border border-dashed border-slate-700">
                     <p>No team built yet.</p>
@@ -172,7 +172,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, myTeam, fixtures }) => {
                  </div>
               ) : (
                  <div className="space-y-3">
-                    {myTeam.slice(0, 5).map(p => (
+                    {[...myTeam].sort((a, b) => parseFloat(b.form) - parseFloat(a.form)).slice(0, 5).map(p => (
                         <div key={p.id} className="flex justify-between items-center bg-slate-700/30 p-3 rounded hover:bg-slate-700/50 transition-colors">
                             <div className="flex items-center gap-2">
                                 <span className="font-medium text-white">{p.web_name}</span>
@@ -180,8 +180,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, myTeam, fixtures }) => {
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="text-right">
-                                    <span className="block text-green-400 font-bold text-sm">{p.total_points}</span>
-                                    <span className="text-[9px] text-slate-500 uppercase">Pts</span>
+                                    <span className="block text-green-400 font-bold text-sm">{p.form}</span>
+                                    <span className="text-[9px] text-slate-500 uppercase">Form</span>
                                 </div>
                                 <ChevronRight size={16} className="text-slate-600"/>
                             </div>
