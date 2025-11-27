@@ -338,35 +338,33 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900/50 text-slate-400 text-[10px] md:text-xs uppercase tracking-wider">
-                  <th className="p-2 md:p-4 w-10 text-center hidden sm:table-cell">#</th>
-                  <th className="p-2 md:p-4 sticky left-0 bg-slate-900 z-20 cursor-pointer hover:text-white shadow-xl md:shadow-none border-r border-slate-700/50" onClick={() => handleSort('web_name')}>
-                      Player <SortIcon colKey="web_name"/>
-                  </th>
-                  <th className="p-2 md:p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('ownership_num')}>Own <SortIcon colKey="ownership"/></th>
-                  <th className="p-4 text-right text-slate-300 hidden md:table-cell">Points History</th>
-                  <th className="p-2 md:p-4 text-right text-blue-400 font-bold cursor-pointer hover:text-white" title="Median Score" onClick={() => handleSort('median_points')}>Median <SortIcon colKey="median_points"/></th>
-                  <th className="p-2 md:p-4 text-right text-green-400 font-bold cursor-pointer hover:text-white" title="% of games with > 2 points" onClick={() => handleSort('consistency')}>Consist. <SortIcon colKey="consistency"/></th>
-                  <th className="p-2 md:p-4 text-right font-bold text-white cursor-pointer hover:text-white" onClick={() => handleSort('total_points')}>Total Pts <SortIcon colKey="total_points"/></th>
+                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider">
+                  <th className="p-4 w-12 text-center">#</th>
+                  <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleSort('web_name')}>Player <SortIcon colKey="web_name"/></th>
+                  <th className="p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('ownership_num')}>Own <SortIcon colKey="ownership"/></th>
+                  <th className="p-4 text-right text-slate-300">Points History</th>
+                  <th className="p-4 text-right text-blue-400 font-bold cursor-pointer hover:text-white" title="Median Score" onClick={() => handleSort('median_points')}>Median <SortIcon colKey="median_points"/></th>
+                  <th className="p-4 text-right text-green-400 font-bold cursor-pointer hover:text-white" title="% of games with > 2 points" onClick={() => handleSort('consistency')}>Consist. <SortIcon colKey="consistency"/></th>
+                  <th className="p-4 text-right font-bold text-white cursor-pointer hover:text-white" onClick={() => handleSort('total_points')}>Total Pts <SortIcon colKey="total_points"/></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50 text-xs md:text-sm">
+              <tbody className="divide-y divide-slate-700/50 text-sm">
                 {processedData.map((p, idx) => (
-                  <tr key={p.id} className="hover:bg-slate-700/30 transition-colors group">
-                    <td className="p-2 md:p-4 text-center text-slate-500 font-mono hidden sm:table-cell">{idx + 1}</td>
-                    <td className="p-2 md:p-4 sticky left-0 bg-slate-800 group-hover:bg-slate-700/80 transition-colors z-20 border-r border-slate-700/50 shadow-xl md:shadow-none">
-                      <div className="font-bold text-white text-sm">{p.web_name}</div>
-                      <div className="text-[10px] text-slate-500">{p.team}</div>
+                  <tr key={p.id} className="hover:bg-slate-700/30 transition-colors">
+                    <td className="p-4 text-center text-slate-500 font-mono">{idx + 1}</td>
+                    <td className="p-4">
+                      <div className="font-bold text-white">{p.web_name}</div>
+                      <div className="text-xs text-slate-500">{p.team}</div>
                     </td>
-                    <td className="p-2 md:p-4 text-right font-mono text-slate-400">{p.ownership}%</td>
+                    <td className="p-4 text-right font-mono text-slate-400">{p.ownership}%</td>
                     
                     {/* Points History Visualization */}
-                    <td className="p-4 hidden md:table-cell">
+                    <td className="p-4">
                        <div className="flex justify-end gap-1">
                           {p.points_history.map((pt, i) => (
                               <div 
                                 key={i} 
-                                className={`w-6 h-6 flex items-center justify-center text-[10px] font-bold rounded border ${
+                                className={`w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-[9px] md:text-[10px] font-bold rounded border ${
                                     pt >= 10 ? 'bg-purple-600 border-purple-500 text-white' :
                                     pt >= 6 ? 'bg-green-600 border-green-500 text-white' :
                                     pt > 2 ? 'bg-slate-600 border-slate-500 text-white' :
@@ -380,15 +378,15 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
                        </div>
                     </td>
 
-                    <td className="p-2 md:p-4 text-right font-mono font-bold text-blue-300 md:bg-blue-900/10 border-l border-r border-slate-700/50">
+                    <td className="p-4 text-right font-mono font-bold text-blue-300 bg-blue-900/10 border-l border-r border-slate-700/50">
                         {p.median_points}
                     </td>
                     
-                    <td className="p-2 md:p-4 text-right font-mono font-bold text-green-400">
+                    <td className="p-4 text-right font-mono font-bold text-green-400">
                         {p.consistency.toFixed(0)}%
                     </td>
 
-                    <td className="p-2 md:p-4 text-right font-bold text-white text-base">{p.total_points}</td>
+                    <td className="p-4 text-right font-bold text-white text-base">{p.total_points}</td>
                   </tr>
                 ))}
               </tbody>
@@ -407,31 +405,29 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900/50 text-slate-400 text-[10px] md:text-xs uppercase tracking-wider">
-                  <th className="p-2 md:p-4 w-10 text-center hidden sm:table-cell">#</th>
-                  <th className="p-2 md:p-4 sticky left-0 bg-slate-900 z-20 cursor-pointer hover:text-white shadow-xl md:shadow-none border-r border-slate-700/50" onClick={() => handleSort('web_name')}>
-                      Player <SortIcon colKey="web_name"/>
-                  </th>
-                  <th className="p-2 md:p-4 text-right text-red-400 cursor-pointer hover:text-white" onClick={() => handleSort('threat')}>Threat <SortIcon colKey="threat"/></th>
-                  <th className="p-2 md:p-4 text-right text-blue-400 cursor-pointer hover:text-white" onClick={() => handleSort('creativity')}>Creativity <SortIcon colKey="creativity"/></th>
-                  <th className="p-2 md:p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('goals')}>Goals <SortIcon colKey="goals"/></th>
-                  <th className="p-2 md:p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('assists')}>Assists <SortIcon colKey="assists"/></th>
-                  <th className="p-2 md:p-4 text-right text-yellow-400 cursor-pointer hover:text-white hidden md:table-cell" onClick={() => handleSort('bonus')}>Bonus <SortIcon colKey="bonus"/></th>
+                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider">
+                  <th className="p-4 w-12 text-center">#</th>
+                  <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleSort('web_name')}>Player <SortIcon colKey="web_name"/></th>
+                  <th className="p-4 text-right text-red-400 cursor-pointer hover:text-white" onClick={() => handleSort('threat')}>Threat <SortIcon colKey="threat"/></th>
+                  <th className="p-4 text-right text-blue-400 cursor-pointer hover:text-white" onClick={() => handleSort('creativity')}>Creativity <SortIcon colKey="creativity"/></th>
+                  <th className="p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('goals')}>Goals <SortIcon colKey="goals"/></th>
+                  <th className="p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('assists')}>Assists <SortIcon colKey="assists"/></th>
+                  <th className="p-4 text-right text-yellow-400 cursor-pointer hover:text-white" onClick={() => handleSort('bonus')}>Bonus <SortIcon colKey="bonus"/></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50 text-xs md:text-sm">
+              <tbody className="divide-y divide-slate-700/50 text-sm">
                 {processedData.map((p, idx) => (
-                  <tr key={p.id} className="hover:bg-slate-700/30 transition-colors group">
-                    <td className="p-2 md:p-4 text-center text-slate-500 font-mono hidden sm:table-cell">{idx + 1}</td>
-                    <td className="p-2 md:p-4 sticky left-0 bg-slate-800 group-hover:bg-slate-700/80 transition-colors z-20 border-r border-slate-700/50 shadow-xl md:shadow-none">
-                      <div className="font-bold text-white text-sm">{p.web_name}</div>
-                      <div className="text-[10px] text-slate-500">{p.team}</div>
+                  <tr key={p.id} className="hover:bg-slate-700/30 transition-colors">
+                    <td className="p-4 text-center text-slate-500 font-mono">{idx + 1}</td>
+                    <td className="p-4">
+                      <div className="font-bold text-white">{p.web_name}</div>
+                      <div className="text-xs text-slate-500">{p.team}</div>
                     </td>
-                    <td className="p-2 md:p-4 text-right font-mono text-slate-300">{p.threat.toFixed(1)}</td>
-                    <td className="p-2 md:p-4 text-right font-mono text-slate-300">{p.creativity.toFixed(1)}</td>
-                    <td className="p-2 md:p-4 text-right font-bold text-white">{p.goals}</td>
-                    <td className="p-2 md:p-4 text-right font-bold text-white">{p.assists}</td>
-                    <td className="p-2 md:p-4 text-right font-mono text-yellow-400 hidden md:table-cell">{p.bonus}</td>
+                    <td className="p-4 text-right font-mono text-slate-300">{p.threat.toFixed(1)}</td>
+                    <td className="p-4 text-right font-mono text-slate-300">{p.creativity.toFixed(1)}</td>
+                    <td className="p-4 text-right font-bold text-white">{p.goals}</td>
+                    <td className="p-4 text-right font-bold text-white">{p.assists}</td>
+                    <td className="p-4 text-right font-mono text-yellow-400">{p.bonus}</td>
                   </tr>
                 ))}
               </tbody>
