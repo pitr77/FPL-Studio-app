@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FPLPlayer, FPLTeam, FPLEvent } from '../types';
 import { getPlayerSummary } from '../services/fplService';
-import { CalendarRange, RefreshCw, AlertCircle, Info, TrendingUp, Activity, Target, Zap, List, HelpCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { CalendarRange, RefreshCw, AlertCircle, TrendingUp, Activity, Target, Zap, List, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface PeriodAnalysisProps {
   players: FPLPlayer[];
@@ -32,15 +32,20 @@ interface AggregatedStats {
 }
 
 const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events }) => {
-  // Determine defaults based on current gameweek
-  const currentEventId = events.find(e => e.is_current)?.id || 1;
-  const defaultFrom = Math.max(1, currentEventId - 4); // Last 5 GWs including current
+  // Identify the last finished gameweek to mark as "Latest"
+  const lastFinishedEventId = useMemo(() => events.filter(e => e.finished).pop()?.id || 1, [events]);
+
+  // Determine defaults based on current gameweek context
+  const currentEventId = events.find(e => e.is_current)?.id || events.find(e => e.is_next)?.id || lastFinishedEventId;
+  const defaultTo = lastFinishedEventId; // Default to last finished data
+  const defaultFrom = Math.max(1, defaultTo - 4); // Last 5 GWs
 
   const [fromGw, setFromGw] = useState<number>(defaultFrom);
-  const [toGw, setToGw] = useState<number>(currentEventId);
+  const [toGw, setToGw] = useState<number>(defaultTo);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<AggregatedStats[]>([]);
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
   
   // Filters & Sorting
   const [activePos, setActivePos] = useState<number | 'all'>('all');
@@ -49,23 +54,9 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
     direction: 'desc' 
   });
 
-  const gameweeks = events.map(e => e.id);
-
-  const handlePreset = (count: number) => {
-      const end = currentEventId;
-      const start = Math.max(1, end - count + 1);
-      setFromGw(start);
-      setToGw(end);
-  };
-
-  const isPresetActive = (count: number) => {
-      const end = currentEventId;
-      const start = Math.max(1, end - count + 1);
-      return fromGw === start && toGw === end;
-  };
-
-  const handleAnalyze = async () => {
-    if (fromGw > toGw) {
+  // Core Analysis Function
+  const runAnalysis = useCallback(async (start: number, end: number) => {
+    if (start > end) {
       setError("Start Gameweek must be before End Gameweek.");
       return;
     }
@@ -74,20 +65,17 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
     setData([]);
 
     try {
-      // To avoid overloading the proxy/API, we only fetch detailed stats for the Top 50 players
-      // sorted by total_points. In a real app with a backend, we would fetch all.
+      // Fetch details for top 50 players (performance optimization)
       const topPlayers = [...players]
         .sort((a, b) => b.total_points - a.total_points)
         .slice(0, 50);
 
-      // Create an array of promises to fetch data in parallel (with caution)
       const promises = topPlayers.map(async (player) => {
         try {
           const summary = await getPlayerSummary(player.id);
           
-          // Filter history for the selected range
           const relevantHistory = summary.history.filter(
-            h => h.round >= fromGw && h.round <= toGw
+            h => h.round >= start && h.round <= end
           );
 
           if (relevantHistory.length === 0) return null;
@@ -100,7 +88,7 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
               median = pointsArr.length % 2 !== 0 ? pointsArr[mid] : (pointsArr[mid - 1] + pointsArr[mid]) / 2;
           }
 
-          // Calculate Consistency (Returns > 2 points)
+          // Calculate Consistency
           const returns = relevantHistory.filter(h => h.total_points > 2).length;
           const consistency = (returns / relevantHistory.length) * 100;
 
@@ -115,8 +103,7 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
             creativity: acc.creativity + parseFloat(match.creativity),
           }), { goals: 0, assists: 0, clean_sheets: 0, bonus: 0, total_points: 0, threat: 0, creativity: 0 });
 
-          // Get raw points chronological for display
-          const historyChronological = relevantHistory.map(h => h.total_points); // Already chronologically sorted by API usually, or round
+          const historyChronological = relevantHistory.map(h => h.total_points);
 
           return {
             id: player.id,
@@ -137,11 +124,7 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
       });
 
       const results = await Promise.all(promises);
-      
-      // Filter out failed requests and sort by points
-      const validResults = results
-        .filter((r): r is AggregatedStats => r !== null);
-
+      const validResults = results.filter((r): r is AggregatedStats => r !== null);
       setData(validResults);
 
     } catch (err) {
@@ -150,6 +133,36 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
     } finally {
       setLoading(false);
     }
+  }, [players, teams]);
+
+  // Auto-load on mount
+  useEffect(() => {
+    if (!hasAutoLoaded && players.length > 0) {
+        runAnalysis(defaultFrom, defaultTo);
+        setHasAutoLoaded(true);
+    }
+  }, [hasAutoLoaded, players, defaultFrom, defaultTo, runAnalysis]);
+
+  const handleAnalyzeClick = () => {
+      runAnalysis(fromGw, toGw);
+  };
+
+  const handlePreset = (count: number) => {
+      // Determine 'end' as the last finished gameweek or current
+      const end = lastFinishedEventId; 
+      const start = Math.max(1, end - count + 1);
+      
+      setFromGw(start);
+      setToGw(end);
+      
+      // Trigger analysis immediately
+      runAnalysis(start, end);
+  };
+
+  const isPresetActive = (count: number) => {
+      const end = lastFinishedEventId;
+      const start = Math.max(1, end - count + 1);
+      return fromGw === start && toGw === end;
   };
 
   // --- Processing for Display ---
@@ -240,60 +253,68 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
             </div>
           </div>
 
-          <div className="flex flex-wrap items-end gap-4 bg-slate-900/50 p-4 rounded-lg border border-slate-700">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-400 uppercase">From GW</label>
-              <select 
-                value={fromGw}
-                onChange={(e) => setFromGw(Number(e.target.value))}
-                className="bg-slate-800 border border-slate-600 text-white rounded px-3 py-2 w-24 focus:ring-2 focus:ring-purple-500 outline-none"
-              >
-                {gameweeks.map(gw => <option key={gw} value={gw}>{gw}</option>)}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-400 uppercase">To GW</label>
-              <select 
-                value={toGw}
-                onChange={(e) => setToGw(Number(e.target.value))}
-                className="bg-slate-800 border border-slate-600 text-white rounded px-3 py-2 w-24 focus:ring-2 focus:ring-purple-500 outline-none"
-              >
-                {gameweeks.map(gw => <option key={gw} value={gw}>{gw}</option>)}
-              </select>
-            </div>
-
-            {/* Presets */}
-            <div className="flex gap-1 h-full items-end pb-0.5">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+            
+            {/* Left: Quick Presets */}
+            <div className="flex gap-2 items-center">
                <button 
                  onClick={() => handlePreset(3)} 
-                 className={`px-3 py-1.5 text-xs text-white rounded transition-colors border ${isPresetActive(3) ? 'bg-purple-600 border-purple-500 font-bold shadow' : 'bg-slate-700 border-slate-600 hover:bg-slate-600'}`}
+                 className={`px-3 py-2 text-xs font-bold rounded transition-colors border ${isPresetActive(3) ? 'bg-purple-600 border-purple-500 text-white shadow' : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 hover:text-white'}`}
                >
                    Last 3
                </button>
                <button 
                  onClick={() => handlePreset(5)} 
-                 className={`px-3 py-1.5 text-xs text-white rounded transition-colors border ${isPresetActive(5) ? 'bg-purple-600 border-purple-500 font-bold shadow' : 'bg-slate-700 border-slate-600 hover:bg-slate-600'}`}
+                 className={`px-3 py-2 text-xs font-bold rounded transition-colors border ${isPresetActive(5) ? 'bg-purple-600 border-purple-500 text-white shadow' : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 hover:text-white'}`}
                >
                    Last 5
                </button>
                <button 
                  onClick={() => handlePreset(10)} 
-                 className={`px-3 py-1.5 text-xs text-white rounded transition-colors border ${isPresetActive(10) ? 'bg-purple-600 border-purple-500 font-bold shadow' : 'bg-slate-700 border-slate-600 hover:bg-slate-600'}`}
+                 className={`px-3 py-2 text-xs font-bold rounded transition-colors border ${isPresetActive(10) ? 'bg-purple-600 border-purple-500 text-white shadow' : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 hover:text-white'}`}
                >
                    Last 10
                </button>
             </div>
 
-            <div className="flex-1"></div>
+            {/* Right: Custom Range + Button */}
+            <div className="flex items-end gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">From</label>
+                  <select 
+                    value={fromGw}
+                    onChange={(e) => setFromGw(Number(e.target.value))}
+                    className="bg-slate-800 border border-slate-600 text-white text-sm rounded px-3 py-2 w-32 focus:ring-2 focus:ring-purple-500 outline-none"
+                  >
+                    {events.map(e => (
+                        <option key={e.id} value={e.id}>GW {e.id}</option>
+                    ))}
+                  </select>
+                </div>
 
-            <button
-              onClick={handleAnalyze}
-              disabled={loading}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-500/20"
-            >
-              {loading ? <RefreshCw className="animate-spin" size={18} /> : 'Analyze Period'}
-            </button>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">To</label>
+                  <select 
+                    value={toGw}
+                    onChange={(e) => setToGw(Number(e.target.value))}
+                    className="bg-slate-800 border border-slate-600 text-white text-sm rounded px-3 py-2 w-32 focus:ring-2 focus:ring-purple-500 outline-none"
+                  >
+                    {events.map(e => (
+                        <option key={e.id} value={e.id}>
+                            GW {e.id} {e.id === lastFinishedEventId ? '(Latest)' : ''}
+                        </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleAnalyzeClick}
+                  disabled={loading}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-500/20 ml-2"
+                >
+                  {loading ? <RefreshCw className="animate-spin" size={18} /> : 'Analyze'}
+                </button>
+            </div>
           </div>
 
           {error && (
@@ -338,28 +359,31 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="p-4 w-12 text-center">#</th>
-                  <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleSort('web_name')}>Player <SortIcon colKey="web_name"/></th>
-                  <th className="p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('ownership_num')}>Own <SortIcon colKey="ownership"/></th>
-                  <th className="p-4 text-right text-slate-300">Points History</th>
-                  <th className="p-4 text-right text-blue-400 font-bold cursor-pointer hover:text-white" title="Median Score" onClick={() => handleSort('median_points')}>Median <SortIcon colKey="median_points"/></th>
-                  <th className="p-4 text-right text-green-400 font-bold cursor-pointer hover:text-white" title="% of games with > 2 points" onClick={() => handleSort('consistency')}>Consist. <SortIcon colKey="consistency"/></th>
-                  <th className="p-4 text-right font-bold text-white cursor-pointer hover:text-white" onClick={() => handleSort('total_points')}>Total Pts <SortIcon colKey="total_points"/></th>
+                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider sticky top-0 z-20">
+                  <th className="p-4 w-12 text-center bg-slate-900/90 border-b border-slate-700 hidden sm:table-cell">#</th>
+                  <th className="p-4 cursor-pointer hover:text-white sticky left-0 z-30 bg-slate-900/95 border-b border-slate-700 shadow-[2px_0_5px_rgba(0,0,0,0.3)]" onClick={() => handleSort('web_name')}>Player <SortIcon colKey="web_name"/></th>
+                  <th className="p-4 text-right cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" onClick={() => handleSort('ownership_num')}>Own <SortIcon colKey="ownership"/></th>
+                  <th className="p-4 text-right text-slate-300 bg-slate-900/90 border-b border-slate-700 hidden sm:table-cell">Points History</th>
+                  <th className="p-4 text-right text-blue-400 font-bold cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" title="Median Score" onClick={() => handleSort('median_points')}>Median <SortIcon colKey="median_points"/></th>
+                  <th className="p-4 text-right text-green-400 font-bold cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" title="% of games with > 2 points" onClick={() => handleSort('consistency')}>Consist. <SortIcon colKey="consistency"/></th>
+                  <th className="p-4 text-right font-bold text-white cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" onClick={() => handleSort('total_points')}>Total Pts <SortIcon colKey="total_points"/></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50 text-sm">
                 {processedData.map((p, idx) => (
                   <tr key={p.id} className="hover:bg-slate-700/30 transition-colors">
-                    <td className="p-4 text-center text-slate-500 font-mono">{idx + 1}</td>
-                    <td className="p-4">
+                    <td className="p-4 text-center text-slate-500 font-mono hidden sm:table-cell">{idx + 1}</td>
+                    
+                    {/* Sticky Name Column */}
+                    <td className="p-4 sticky left-0 z-10 bg-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] border-r border-slate-700/50">
                       <div className="font-bold text-white">{p.web_name}</div>
                       <div className="text-xs text-slate-500">{p.team}</div>
                     </td>
+                    
                     <td className="p-4 text-right font-mono text-slate-400">{p.ownership}%</td>
                     
                     {/* Points History Visualization */}
-                    <td className="p-4">
+                    <td className="p-4 hidden sm:table-cell">
                        <div className="flex justify-end gap-1">
                           {p.points_history.map((pt, i) => (
                               <div 
@@ -405,24 +429,27 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="p-4 w-12 text-center">#</th>
-                  <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleSort('web_name')}>Player <SortIcon colKey="web_name"/></th>
-                  <th className="p-4 text-right text-red-400 cursor-pointer hover:text-white" onClick={() => handleSort('threat')}>Threat <SortIcon colKey="threat"/></th>
-                  <th className="p-4 text-right text-blue-400 cursor-pointer hover:text-white" onClick={() => handleSort('creativity')}>Creativity <SortIcon colKey="creativity"/></th>
-                  <th className="p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('goals')}>Goals <SortIcon colKey="goals"/></th>
-                  <th className="p-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('assists')}>Assists <SortIcon colKey="assists"/></th>
-                  <th className="p-4 text-right text-yellow-400 cursor-pointer hover:text-white" onClick={() => handleSort('bonus')}>Bonus <SortIcon colKey="bonus"/></th>
+                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider sticky top-0 z-20">
+                  <th className="p-4 w-12 text-center bg-slate-900/90 border-b border-slate-700 hidden sm:table-cell">#</th>
+                  <th className="p-4 cursor-pointer hover:text-white sticky left-0 z-30 bg-slate-900/95 border-b border-slate-700 shadow-[2px_0_5px_rgba(0,0,0,0.3)]" onClick={() => handleSort('web_name')}>Player <SortIcon colKey="web_name"/></th>
+                  <th className="p-4 text-right text-red-400 cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" onClick={() => handleSort('threat')}>Threat <SortIcon colKey="threat"/></th>
+                  <th className="p-4 text-right text-blue-400 cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" onClick={() => handleSort('creativity')}>Creativity <SortIcon colKey="creativity"/></th>
+                  <th className="p-4 text-right cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" onClick={() => handleSort('goals')}>Goals <SortIcon colKey="goals"/></th>
+                  <th className="p-4 text-right cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" onClick={() => handleSort('assists')}>Assists <SortIcon colKey="assists"/></th>
+                  <th className="p-4 text-right text-yellow-400 cursor-pointer hover:text-white bg-slate-900/90 border-b border-slate-700" onClick={() => handleSort('bonus')}>Bonus <SortIcon colKey="bonus"/></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50 text-sm">
                 {processedData.map((p, idx) => (
                   <tr key={p.id} className="hover:bg-slate-700/30 transition-colors">
-                    <td className="p-4 text-center text-slate-500 font-mono">{idx + 1}</td>
-                    <td className="p-4">
+                    <td className="p-4 text-center text-slate-500 font-mono hidden sm:table-cell">{idx + 1}</td>
+                    
+                    {/* Sticky Name Column */}
+                    <td className="p-4 sticky left-0 z-10 bg-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] border-r border-slate-700/50">
                       <div className="font-bold text-white">{p.web_name}</div>
                       <div className="text-xs text-slate-500">{p.team}</div>
                     </td>
+                    
                     <td className="p-4 text-right font-mono text-slate-300">{p.threat.toFixed(1)}</td>
                     <td className="p-4 text-right font-mono text-slate-300">{p.creativity.toFixed(1)}</td>
                     <td className="p-4 text-right font-bold text-white">{p.goals}</td>

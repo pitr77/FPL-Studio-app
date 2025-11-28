@@ -13,8 +13,9 @@ import DetailedStats from './components/DetailedStats';
 import OptimalSquad from './components/OptimalSquad';
 import TeamAnalysis from './components/TeamAnalysis';
 import PeriodAnalysis from './components/PeriodAnalysis';
+import CompareMode from './components/CompareMode';
 // import ScoutChat from './components/ScoutChat'; // Temporarily disabled
-import { LayoutDashboard, Calendar, Shirt, BarChart2, BrainCircuit, Menu, X, RefreshCw, Users, Trophy, ArrowLeftRight, Activity, Zap, Search, CalendarRange } from 'lucide-react';
+import { LayoutDashboard, Calendar, Shirt, BarChart2, BrainCircuit, Menu, X, RefreshCw, Users, Trophy, ArrowLeftRight, Activity, Zap, Search, CalendarRange, Split } from 'lucide-react';
 
 enum View {
   DASHBOARD,
@@ -28,6 +29,7 @@ enum View {
   OPTIMAL_SQUAD,
   TEAM_ANALYSIS,
   PERIOD_ANALYSIS,
+  COMPARE_MODE,
   SCOUT
 }
 
@@ -137,6 +139,7 @@ function App() {
             <NavItem v={View.STATS} label="Player Stats" icon={BarChart2} />
             <NavItem v={View.DETAILED_STATS} label="Detailed Analyses" icon={Activity} />
             <NavItem v={View.TOP_MANAGERS} label="Top 100 Managers" icon={Users} />
+            <NavItem v={View.COMPARE_MODE} label="Compare Mode" icon={Split} />
             {/* <NavItem v={View.SCOUT} label="AI Scout" icon={BrainCircuit} /> */}
          </nav>
          
@@ -172,6 +175,8 @@ function App() {
            {view === View.DETAILED_STATS && <DetailedStats players={data.elements} teams={data.teams} />}
 
            {view === View.TOP_MANAGERS && <TopManagers players={data.elements} teams={data.teams} />}
+
+           {view === View.COMPARE_MODE && <CompareMode data={data} fixtures={fixtures} />}
 
            {/* {view === View.SCOUT && (
               <ScoutChat 
