@@ -152,7 +152,7 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 scroll-smooth">
-         <div className="max-w-7xl mx-auto h-full">
+         <div className={`${view === View.COMPARE_MODE ? 'w-full' : 'max-w-7xl'} mx-auto h-full`}>
            
            {view === View.DASHBOARD && <Dashboard data={data} myTeam={myTeam} fixtures={fixtures} />}
            
