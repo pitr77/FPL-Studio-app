@@ -1,7 +1,8 @@
+"use client";
+
 import React, { useEffect, useState } from 'react';
 import { getBootstrapStatic, getFixtures } from './services/fplService';
-import { getScoutAdvice } from './services/geminiService';
-import { BootstrapStatic, FPLFixture, FPLPlayer, ScoutAdvice } from './types';
+import { BootstrapStatic, FPLFixture, FPLPlayer } from './types';
 import Dashboard from './components/Dashboard';
 import Fixtures from './components/Fixtures';
 import TeamBuilder from './components/TeamBuilder';
