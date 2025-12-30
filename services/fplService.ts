@@ -2,6 +2,14 @@ import { BootstrapStatic, FPLFixture, FPLElementSummary } from '../types';
 
 const BASE_URL = 'https://fantasy.premierleague.com/api';
 
+async function fetchFromBackend(path: string) {
+  const response = await fetch(path);
+  if (!response.ok) {
+    throw new Error(`Backend API error: ${response.status}`);
+  }
+  return await response.json();
+}
+
 /**
  * Fetches data using multiple CORS proxies to ensure reliability.
  * FPL API does not support CORS for browser requests, so we must use a proxy.
@@ -44,19 +52,36 @@ async function fetchViaProxy(url: string) {
 }
 
 export const getBootstrapStatic = async (): Promise<BootstrapStatic> => {
-  return fetchViaProxy(`${BASE_URL}/bootstrap-static/`);
+  try {
+    return await fetchFromBackend('/api/fpl/bootstrap-static');
+  } catch {
+    // Fallback for legacy/static deployments where the backend route is unavailable.
+    return fetchViaProxy(`${BASE_URL}/bootstrap-static/`);
+  }
 };
 
 export const getFixtures = async (): Promise<FPLFixture[]> => {
-  return fetchViaProxy(`${BASE_URL}/fixtures/`);
+  try {
+    return await fetchFromBackend('/api/fpl/fixtures');
+  } catch {
+    return fetchViaProxy(`${BASE_URL}/fixtures/`);
+  }
 };
 
 export const getUserPicks = async (teamId: number, eventId: number): Promise<{ picks: { element: number, position: number }[] }> => {
-  return fetchViaProxy(`${BASE_URL}/entry/${teamId}/event/${eventId}/picks/`);
+  try {
+    return await fetchFromBackend(`/api/fpl/entry/${teamId}/event/${eventId}/picks`);
+  } catch {
+    return fetchViaProxy(`${BASE_URL}/entry/${teamId}/event/${eventId}/picks/`);
+  }
 };
 
 export const getPlayerSummary = async (playerId: number): Promise<FPLElementSummary> => {
-  return fetchViaProxy(`${BASE_URL}/element-summary/${playerId}/`);
+  try {
+    return await fetchFromBackend(`/api/fpl/element-summary/${playerId}`);
+  } catch {
+    return fetchViaProxy(`${BASE_URL}/element-summary/${playerId}/`);
+  }
 };
 
 export const getPlayerImageUrl = (photoCode: string) => {

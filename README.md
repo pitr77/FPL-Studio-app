@@ -15,6 +15,10 @@ View your app in AI Studio: https://ai.studio/apps/drive/1j9POCD0W5Zpp57gO4gKx9x
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. (Optional) Set `GEMINI_API_KEY` in `.env.local` if/when enabling AI features
 3. Run the app:
    `npm run dev`
+
+## Notes
+
+- FPL data is now fetched via server routes under `/api/fpl/*` (Next.js), which avoids browser CORS proxy issues.

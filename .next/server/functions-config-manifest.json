@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/fpl/bootstrap-static": {},
+    "/api/fpl/element-summary/[playerId]": {},
+    "/api/fpl/entry/[teamId]/event/[eventId]/picks": {},
+    "/api/fpl/fixtures": {}
+  }
+}
