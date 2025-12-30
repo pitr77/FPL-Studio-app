@@ -19,7 +19,7 @@ export default function LoginPage() {
       },
     });
     if (error) setStatus(error.message);
-    else setStatus(mode === 'signup' ? 'Check your email to finish creating your account.' : 'Check your email for the sign-in link.');
+    else setStatus(mode === 'signup' ? 'Check your email to finish creating your account.' : 'Check your email for the login link.');
   };
 
   const signInWithGoogle = async () => {
@@ -36,20 +36,20 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
-        <h1 className="text-2xl font-bold">{mode === 'signup' ? 'Sign up' : 'Sign in'}</h1>
+        <h1 className="text-2xl font-bold">{mode === 'signup' ? 'Create account' : 'Log in'}</h1>
         <p className="text-xs text-slate-400">
           {mode === 'signup' ? (
             <>
               Already have an account?{' '}
               <a href="/login" className="underline">
-                Sign in
+                Log in
               </a>
             </>
           ) : (
             <>
               New here?{' '}
               <a href="/login?mode=signup" className="underline">
-                Sign up
+                Create account
               </a>
             </>
           )}
@@ -78,7 +78,7 @@ export default function LoginPage() {
           onClick={signInWithEmail}
           className="w-full bg-purple-600 hover:bg-purple-500 font-bold py-2 rounded-lg"
         >
-          {mode === 'signup' ? 'Email me a sign-up link' : 'Email me a sign-in link'}
+          {mode === 'signup' ? 'Email me a sign-up link' : 'Email me a login link'}
         </button>
 
         {status && <p className="text-sm text-slate-300">{status}</p>}

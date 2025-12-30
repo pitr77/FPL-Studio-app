@@ -273,13 +273,13 @@ function App() {
                 href="/login"
                 className="text-xs font-bold bg-purple-600 hover:bg-purple-500 rounded px-3 py-2"
               >
-                Sign in
+                Log in
               </a>
               <a
                 href="/login?mode=signup"
                 className="text-xs font-bold bg-slate-900/60 hover:bg-slate-800 border border-slate-800 rounded px-3 py-2"
               >
-                Sign up
+                Create account
               </a>
             </div>
           )}
@@ -301,13 +301,13 @@ function App() {
                     href="/login"
                     className="inline-block bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-lg"
                   >
-                    Sign in
+                    Log in
                   </a>
                   <a
                     href="/login?mode=signup"
                     className="inline-block bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-lg"
                   >
-                    Sign up
+                    Create account
                   </a>
                 </div>
               ) : (
