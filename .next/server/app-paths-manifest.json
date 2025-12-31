@@ -4,5 +4,7 @@
   "/api/fpl/entry/[teamId]/event/[eventId]/picks/route": "app/api/fpl/entry/[teamId]/event/[eventId]/picks/route.js",
   "/api/fpl/fixtures/route": "app/api/fpl/fixtures/route.js",
   "/api/fpl/bootstrap-static/route": "app/api/fpl/bootstrap-static/route.js",
+  "/auth/callback/page": "app/auth/callback/page.js",
+  "/login/page": "app/login/page.js",
   "/page": "app/page.js"
 }
