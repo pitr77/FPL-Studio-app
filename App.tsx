@@ -225,7 +225,7 @@ function App() {
       {/* Sidebar - Updated Flex Layout */}
       <aside className={`fixed md:relative z-40 w-72 h-full bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 flex flex-col`}>
         <div className="p-6 border-b border-slate-800 shrink-0">
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-green-400">FPL Master</h1>
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-green-400">FPL STUDIO</h1>
         </div>
 
         <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto custom-scrollbar">
