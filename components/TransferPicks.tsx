@@ -149,7 +149,7 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                                     <Calculator size={14} className="text-blue-400" /> The Algorithm
                                 </h4>
                                 <p className="text-xs mb-2 leading-relaxed">
-                                    We calculate a <strong>Transfer Index (0.00 - 1.00)</strong> to find players in the "Goldilocks Zone" of high performance and easy upcoming games.
+                                    We calculate a <strong>Transfer Index (0 - 100)</strong> to find players in the "Goldilocks Zone" of high performance and easy upcoming games.
                                 </p>
                                 <div className="flex gap-2 text-[10px] font-mono mt-2">
                                     <span className="bg-slate-800 px-2 py-1 rounded border border-slate-600">50% Current Form</span>
@@ -183,7 +183,7 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                             {/* Colors */}
                             <div>
                                 <h4 className="font-bold text-white mb-2 flex items-center gap-2">
-                                    <HelpCircle size={14} className="text-orange-400" /> Fixture Difficulty
+                                    Fixture Difficulty
                                 </h4>
                                 <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-white text-center">
                                     <div className="bg-green-600 rounded py-1 border border-green-700">Easy (1)</div>
@@ -298,9 +298,12 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                                             <div className="text-xs text-slate-500">{getTeamShort(p.team)}</div>
                                         </td>
                                         <td className="p-4">
-                                            <div className="flex flex-col gap-1">
-                                                <span className={`font-bold font-mono text-base ${p.transferIndex > 0.7 ? 'text-green-400' : p.transferIndex > 0.5 ? 'text-blue-400' : 'text-slate-400'}`}>
-                                                    {p.transferIndex.toFixed(2)}
+                                            <div className="flex flex-col gap-1 ml-3">
+                                                <span
+                                                    className={`font-bold font-mono text-base ${p.transferIndex > 0.7 ? 'text-green-400' : p.transferIndex > 0.5 ? 'text-blue-400' : 'text-slate-400'}`}
+                                                    title="Transfer Index is a combined score of recent form and fixture difficulty. Higher = better. 60 = above average."
+                                                >
+                                                    {Math.round(p.transferIndex * 100)}
                                                 </span>
                                                 {/* Progress Bar */}
                                                 <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">

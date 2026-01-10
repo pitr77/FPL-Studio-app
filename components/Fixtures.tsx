@@ -556,8 +556,11 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                                                                             {getPositionLabel(p.element_type)} · £{p.now_cost / 10}
                                                                         </div>
                                                                     </div>
-                                                                    <div className="bg-purple-500/10 text-purple-400 text-[10px] font-black px-1.5 py-0.5 rounded border border-purple-500/20">
-                                                                        TI {p.transferIndex.toFixed(2)}
+                                                                    <div
+                                                                        className="bg-purple-500/10 text-purple-400 text-[10px] font-black px-1.5 py-0.5 rounded border border-purple-500/20 ml-3"
+                                                                        title="Transfer Index is a combined score of recent form and fixture difficulty. Higher = better. 60 = above average."
+                                                                    >
+                                                                        TI {Math.round(p.transferIndex * 100)}
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex justify-between items-end mt-1">
