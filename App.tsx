@@ -41,6 +41,8 @@ function App() {
   const [view, setView] = useState<View>(View.DASHBOARD);
   // Later: set to true when Stripe/paywall is ready
   const PRO_PAYWALL_ENABLED = false;
+  // Feature flag for experimental/unfinished sections
+  const ENABLE_EXPERIMENTAL_SECTIONS = false;
   // DEV bypass for local testing (Period Analysis, Player Stats, etc.)
   const DEV_AUTH_BYPASS =
     process.env.NODE_ENV === 'development' &&
@@ -239,12 +241,12 @@ function App() {
           <NavItem v={View.PERIOD_ANALYSIS} label="Period Analysis" icon={CalendarRange} requiresAuth />
           <NavItem v={View.FIXTURES} label="Fixtures" icon={Calendar} />
           <NavItem v={View.TRANSFER_PICKS} label="Transfer Picks" icon={ArrowLeftRight} />
-          <NavItem v={View.OPTIMAL_SQUAD} label="Optimal 11" icon={Zap} />
-          <NavItem v={View.TEAM} label="My Team" icon={Shirt} />
+          {ENABLE_EXPERIMENTAL_SECTIONS && <NavItem v={View.OPTIMAL_SQUAD} label="Optimal 11" icon={Zap} />}
+          {ENABLE_EXPERIMENTAL_SECTIONS && <NavItem v={View.TEAM} label="My Team" icon={Shirt} />}
           <NavItem v={View.STATS} label="Player Stats" icon={BarChart2} requiresAuth />
           <NavItem v={View.DETAILED_STATS} label="Detailed Analyses" icon={Activity} />
-          <NavItem v={View.TOP_MANAGERS} label="Top 100 Managers" icon={Users} />
-          <NavItem v={View.COMPARE_MODE} label="Compare Mode" icon={Split} />
+          {ENABLE_EXPERIMENTAL_SECTIONS && <NavItem v={View.TOP_MANAGERS} label="Top 100 Managers" icon={Users} />}
+          {ENABLE_EXPERIMENTAL_SECTIONS && <NavItem v={View.COMPARE_MODE} label="Compare Mode" icon={Split} />}
           {/* <NavItem v={View.SCOUT} label="AI Scout" icon={BrainCircuit} /> */}
         </nav>
 
