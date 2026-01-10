@@ -7,7 +7,7 @@ interface LeagueTableProps {
   fixtures: FPLFixture[];
 }
 
-type TableMode = 'basic' | 'results' | 'advanced' | 'form';
+type TableMode = 'basic' | 'advanced' | 'form';
 type FormResult = 'W' | 'D' | 'L';
 
 interface FormMatch {
@@ -49,7 +49,7 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
   const isDesktop = useIsDesktop(768);
 
   const [activeHighlight, setActiveHighlight] = useState<{ source: number; target: number } | null>(null);
-  const [mode, setMode] = useState<TableMode>('results');
+  const [mode, setMode] = useState<TableMode>('basic');
   const [selectedForm, setSelectedForm] = useState<SelectedForm | null>(null);
 
   const tableData = useMemo<TeamStats[]>(() => {
@@ -141,17 +141,7 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
     return dt.toLocaleDateString('en-GB');
   };
 
-  // ===== Column widths - Mobile-friendly, no sticky =====
-  const W_NUM = isDesktop ? 48 : 40; // #
-  const W_TEAM = isDesktop ? 224 : 80; // Team - wider on mobile for readability
-  const W_PTS = isDesktop ? 64 : 50; // Points
 
-  // Table min width per tab - reduced for mobile
-  const minWidth =
-    mode === 'basic' ? (isDesktop ? 420 : 280) :
-    mode === 'results' ? (isDesktop ? 640 : 500) :
-    mode === 'form' ? (isDesktop ? 520 : 380) :
-    (isDesktop ? 920 : 680);
 
   const ModePill = ({ value, label }: { value: TableMode; label: string }) => {
     const isActive = mode === value;
@@ -180,13 +170,8 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
   // Calculate colspan dynamically based on mode
   const colSpan = useMemo(() => {
     let count = 3; // Always: #, Team, Pts (sticky columns)
-    
+
     if (mode === 'basic') {
-      count += 1; // GD
-    } else if (mode === 'results') {
-      count += 1; // MP
-      count += 3; // W, D, L
-      if (isDesktop) count += 2; // GF, GA (desktop only)
       count += 1; // GD
     } else if (mode === 'form') {
       count += 1; // GD
@@ -197,7 +182,7 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
       count += 2; // GF, GA
       count += 1; // GD
     }
-    
+
     return count;
   }, [mode, isDesktop]);
 
@@ -214,83 +199,61 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
 
         <div className="flex flex-wrap gap-2">
           <ModePill value="basic" label="BASIC" />
-          <ModePill value="results" label="RESULTS" />
           <ModePill value="advanced" label="ADV" />
           <ModePill value="form" label="FORM" />
         </div>
       </div>
 
-      <div className="mt-6 overflow-auto max-h-[70vh] isolate rounded-lg border border-slate-700/60 bg-slate-950/20">
-        <table className="w-full text-left border-collapse" style={{ minWidth }}>
+      <div className="mt-6 overflow-x-auto max-h-[70vh] isolate rounded-lg border border-slate-700/60 bg-slate-950/20 custom-scrollbar">
+        <table className="w-full text-left border-collapse table-fixed md:table-auto">
           <thead>
             <tr className="bg-slate-900 text-slate-400 text-[10px] md:text-xs uppercase tracking-wider border-b border-slate-700 sticky top-0 z-40">
               {/* # */}
               <th
-                className="py-2 text-center bg-slate-900 border-r border-slate-700/50"
-                style={{ width: W_NUM, minWidth: W_NUM }}
+                className={`py-2 text-center bg-slate-900 border-r border-slate-700/50 ${mode === 'advanced' ? 'w-[6%]' : 'w-[8%]'
+                  }`}
               >
                 #
               </th>
 
               {/* TEAM */}
               <th
-                className="py-2 px-2 border-r border-slate-700/50 bg-slate-900"
-                style={{ 
-                  width: W_TEAM, 
-                  minWidth: W_TEAM
-                }}
+                className={`py-2 px-2 border-r border-slate-700/50 bg-slate-900 ${mode === 'basic' ? 'w-[50%]' : mode === 'advanced' ? 'w-[25%]' : 'w-[22%]'
+                  }`}
               >
                 Team
               </th>
 
               {/* PTS */}
               <th
-                className="py-2 text-center border-r border-slate-700/50 bg-slate-900"
-                style={{ 
-                  width: W_PTS, 
-                  minWidth: W_PTS
-                }}
+                className={`py-2 text-center border-r border-slate-700/50 bg-slate-900 ${mode === 'basic' ? 'w-[22%]' : mode === 'advanced' ? 'w-[9%]' : 'w-[10%]'
+                  }`}
               >
                 Pts
               </th>
 
-              {/* RESULTS columns */}
-              {mode === 'results' && (
-                <>
-                  <th className="px-2 py-2 text-center w-12 bg-slate-900">MP</th>
-                  <th className="px-2 py-2 text-center w-10 text-green-400 bg-slate-900">W</th>
-                  <th className="px-2 py-2 text-center w-10 text-slate-400 bg-slate-900">D</th>
-                  <th className="px-2 py-2 text-center w-10 text-red-400 bg-slate-900">L</th>
-                  {isDesktop && (
-                    <>
-                      <th className="px-2 py-2 text-center w-12 bg-slate-900">GF</th>
-                      <th className="px-2 py-2 text-center w-12 bg-slate-900">GA</th>
-                    </>
-                  )}
-                  <th className="px-2 py-2 text-center w-8 bg-slate-900">GD</th>
-                </>
-              )}
+
 
               {/* ADVANCED columns */}
               {mode === 'advanced' && (
                 <>
-                  <th className="px-2 py-2 text-center w-12 bg-slate-900">MP</th>
-                  <th className="px-2 py-2 text-center w-10 text-green-400 bg-slate-900">W</th>
-                  <th className="px-2 py-2 text-center w-10 text-slate-400 bg-slate-900">D</th>
-                  <th className="px-2 py-2 text-center w-10 text-red-400 bg-slate-900">L</th>
-                  <th className="px-2 py-2 text-center w-12 bg-slate-900">GF</th>
-                  <th className="px-2 py-2 text-center w-12 bg-slate-900">GA</th>
-                  <th className="px-2 py-2 text-center w-12 bg-slate-900">GD</th>
+                  <th className="md:px-4 py-2 text-center text-xs md:text-sm text-slate-400 w-[8%] bg-slate-900">MP</th>
+                  <th className="md:px-4 py-2 text-center text-xs md:text-sm text-green-400 w-[7%] bg-slate-900">W</th>
+                  <th className="md:px-4 py-2 text-center text-xs md:text-sm text-slate-400 w-[7%] bg-slate-900">D</th>
+                  <th className="md:px-4 py-2 text-center text-xs md:text-sm text-red-400 w-[7%] bg-slate-900">L</th>
+                  <th className="md:px-4 py-2 text-center text-xs md:text-sm text-slate-400 w-[10%] bg-slate-900">GF</th>
+                  <th className="md:px-4 py-2 text-center text-xs md:text-sm text-slate-400 w-[10%] bg-slate-900">GA</th>
+                  <th className="md:px-4 py-2 text-center text-xs md:text-sm text-slate-400 w-[11%] bg-slate-900">GD</th>
                 </>
               )}
 
               {/* BASIC/FORM show GD */}
               {(mode === 'basic' || mode === 'form') && (
-                <th className="px-2 py-2 text-center w-8 bg-slate-900">GD</th>
+                <th className={`px-2 py-2 text-center bg-slate-900 ${mode === 'basic' ? 'w-[20%]' : 'w-[10%]'}`}>GD</th>
               )}
 
-              {/* FORM tab */}
-              {mode === 'form' && <th className="px-2 py-2 w-28 text-center bg-slate-900">Form</th>}
+              {/* FORM tab column */}
+              {mode === 'form' && <th className="px-2 md:px-4 py-2 text-center text-xs md:text-sm text-slate-400 w-[52%] bg-slate-900">Form</th>}
             </tr>
           </thead>
 
@@ -354,7 +317,6 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
                       'py-2 text-center font-bold text-slate-300 border-r border-slate-700/50 text-xs',
                       rowBg,
                     ].join(' ')}
-                    style={{ width: W_NUM, minWidth: W_NUM }}
                   >
                     {pos}
                   </td>
@@ -365,12 +327,9 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
                       'py-2 px-2 font-semibold text-white border-r border-slate-700/50',
                       rowBg,
                     ].join(' ')}
-                    style={{ 
-                      width: W_TEAM, 
-                      minWidth: W_TEAM
-                    }}
                   >
-                    <span className="block truncate">{team?.short_name || 'N/A'}</span>
+                    <span className="md:hidden truncate block">{team?.short_name || 'N/A'}</span>
+                    <span className="hidden md:block truncate">{team?.name || 'N/A'}</span>
                   </td>
 
                   {/* PTS */}
@@ -379,46 +338,20 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
                       'py-2 text-center font-bold text-white border-r border-slate-700/50',
                       rowBg,
                     ].join(' ')}
-                    style={{ 
-                      width: W_PTS, 
-                      minWidth: W_PTS
-                    }}
                   >
                     {row.pts}
                   </td>
 
-                  {/* RESULTS mode */}
-                  {mode === 'results' && (
-                    <>
-                      <td className="px-2 py-2 text-center w-12">{row.played}</td>
-                      <td className="px-2 py-2 text-center w-10 text-green-400">{row.win}</td>
-                      <td className="px-2 py-2 text-center w-10 text-slate-200">{row.draw}</td>
-                      <td className="px-2 py-2 text-center w-10 text-red-400">{row.loss}</td>
-                      {isDesktop && (
-                        <>
-                          <td className="px-2 py-2 text-center w-12">{row.gf}</td>
-                          <td className="px-2 py-2 text-center w-12">{row.ga}</td>
-                        </>
-                      )}
-                      <td className="px-2 py-2 text-center w-12">
-                        <span className={row.gf - row.ga >= 0 ? 'text-green-300' : 'text-red-300'}>
-                          {row.gf - row.ga >= 0 ? '+' : ''}
-                          {row.gf - row.ga}
-                        </span>
-                      </td>
-                    </>
-                  )}
-
-                  {/* ADVANCED mode */}
+                  {/* ADVANCED mode cells */}
                   {mode === 'advanced' && (
                     <>
-                      <td className="px-2 py-2 text-center w-12">{row.played}</td>
-                      <td className="px-2 py-2 text-center w-10 text-green-400">{row.win}</td>
-                      <td className="px-2 py-2 text-center w-10 text-slate-200">{row.draw}</td>
-                      <td className="px-2 py-2 text-center w-10 text-red-400">{row.loss}</td>
-                      <td className="px-2 py-2 text-center w-12">{row.gf}</td>
-                      <td className="px-2 py-2 text-center w-12">{row.ga}</td>
-                      <td className="px-2 py-2 text-center w-12">
+                      <td className="px-2 md:px-4 py-2 text-center text-slate-200">{row.played}</td>
+                      <td className="px-2 md:px-4 py-2 text-center text-green-400 font-semibold">{row.win}</td>
+                      <td className="px-2 md:px-4 py-2 text-center text-slate-400">{row.draw}</td>
+                      <td className="px-2 md:px-4 py-2 text-center text-red-400">{row.loss}</td>
+                      <td className="px-2 md:px-4 py-2 text-center text-slate-200">{row.gf}</td>
+                      <td className="px-2 md:px-4 py-2 text-center text-slate-200">{row.ga}</td>
+                      <td className="px-2 md:px-4 py-2 text-center">
                         <span className={row.gf - row.ga >= 0 ? 'text-green-300' : 'text-red-300'}>
                           {row.gf - row.ga >= 0 ? '+' : ''}
                           {row.gf - row.ga}
@@ -427,7 +360,7 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
                     </>
                   )}
 
-                  {/* BASIC mode */}
+                  {/* BASIC mode cell */}
                   {mode === 'basic' && (
                     <td className="px-2 py-2 text-center w-8">
                       <span className={row.gf - row.ga >= 0 ? 'text-green-300' : 'text-red-300'}>
@@ -437,28 +370,28 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
                     </td>
                   )}
 
-                  {/* FORM mode */}
+                  {/* FORM mode cells */}
                   {mode === 'form' && (
                     <>
-                      <td className="px-2 py-2 text-center w-12">
+                      <td className="px-2 md:px-4 py-2 text-center">
                         <span className={row.gf - row.ga >= 0 ? 'text-green-300' : 'text-red-300'}>
                           {row.gf - row.ga >= 0 ? '+' : ''}
                           {row.gf - row.ga}
                         </span>
                       </td>
-                      <td className="px-2 py-2 w-28">
-                        <div className="flex items-center justify-center gap-1">
+                      <td className="px-2 md:px-4 py-2">
+                        <div className="flex items-center justify-center gap-1 md:gap-1.5">
                           {last5.length === 0 && <span className="text-slate-500 text-xs">—</span>}
 
-                          {last5.map((match, i) => {
+                          {([...last5].reverse()).map((match, i) => {
                             const Icon = match.result === 'W' ? Check : match.result === 'L' ? X : Minus;
 
                             const colorClass =
                               match.result === 'W'
-                                ? 'bg-green-500 border-green-400'
+                                ? 'bg-green-500/90 border-green-400/50'
                                 : match.result === 'L'
-                                  ? 'bg-red-500 border-red-400'
-                                  : 'bg-slate-600 border-slate-500';
+                                  ? 'bg-red-500/90 border-red-400/50'
+                                  : 'bg-slate-600/90 border-slate-500/50';
 
                             const isSelected = selectedForm?.teamId === row.id && selectedForm?.idx === i;
 
@@ -467,16 +400,17 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
                                 key={i}
                                 type="button"
                                 className={[
-                                  'relative w-5 h-5 rounded-sm border flex items-center justify-center cursor-pointer',
-                                  'transition-transform hover:scale-110',
+                                  'relative flex items-center justify-center rounded-md text-[10px] md:text-xs font-semibold',
+                                  'px-1.5 md:px-2.5 py-0.5 border cursor-pointer',
+                                  'transition-all hover:scale-105 active:scale-95',
                                   colorClass,
-                                  isSelected ? 'ring-2 ring-sky-400 ring-offset-2 ring-offset-slate-900' : '',
+                                  isSelected ? 'ring-2 ring-sky-400 ring-offset-2 ring-offset-slate-900 shadow-xl z-20 scale-105' : '',
                                 ].join(' ')}
                                 onMouseEnter={() => setActiveHighlight({ source: row.id, target: match.opponent })}
                                 onMouseLeave={() => setActiveHighlight(null)}
                                 onClick={() => setSelectedForm({ teamId: row.id, idx: i, match })}
                               >
-                                <Icon className="w-3 h-3 text-white" />
+                                <Icon className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                               </button>
                             );
                           })}
@@ -527,8 +461,31 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ teams, fixtures }) => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 gap-3 px-2">
-        <p className="text-slate-400 text-sm">{fixtures.filter((f) => f.finished).length} games played</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 gap-4 px-2">
+        <p className="text-slate-400 text-sm font-medium">{fixtures.filter((f) => f.finished).length} games played</p>
+
+        {mode === 'form' && (
+          <div className="flex items-center gap-4 text-[10px] md:text-xs">
+            <div className="flex items-center gap-1.5 grayscale-[0.3]">
+              <div className="flex items-center justify-center rounded-md bg-green-500/90 w-5 h-5 md:w-6 md:h-5 text-white">
+                <Check size={12} />
+              </div>
+              <span className="text-slate-400 font-bold uppercase tracking-wider">Win</span>
+            </div>
+            <div className="flex items-center gap-1.5 grayscale-[0.3]">
+              <div className="flex items-center justify-center rounded-md bg-slate-600/90 w-5 h-5 md:w-6 md:h-5 text-white">
+                <Minus size={12} />
+              </div>
+              <span className="text-slate-400 font-bold uppercase tracking-wider">Draw</span>
+            </div>
+            <div className="flex items-center gap-1.5 grayscale-[0.3]">
+              <div className="flex items-center justify-center rounded-md bg-red-500/90 w-5 h-5 md:w-6 md:h-5 text-white">
+                <X size={12} />
+              </div>
+              <span className="text-slate-400 font-bold uppercase tracking-wider">Loss</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
