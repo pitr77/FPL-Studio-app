@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { FPLFixture, FPLTeam, FPLEvent, FPLPlayer } from '../types';
-import { Calendar, LayoutGrid, Activity, AlertTriangle, CheckCircle2, Info, ChevronDown, ChevronUp, HelpCircle, Trophy, Shield, Home, ChevronLeft, ChevronRight, BrainCircuit, User } from 'lucide-react';
+import { Calendar, LayoutGrid, Activity, AlertTriangle, CheckCircle2, Info, ChevronDown, ChevronUp, HelpCircle, Trophy, Shield, Home, ChevronLeft, ChevronRight, BrainCircuit, User, TrendingUp, History } from 'lucide-react';
+import { TeamIcon } from './TeamIcon';
 import { calculateLeaguePositions, getDynamicDifficulty } from '../lib/fdrModel';
 import { computeTransferIndexForPlayers, TransferIndexResult } from '../lib/transferIndex';
 
@@ -30,23 +31,6 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
 
     const getDifficulty = (opponentId: number) => getDynamicDifficulty(opponentId, players, getLeaguePositions);
 
-    // Get Last 5 Form for a team
-    const getTeamForm = (teamId: number) => {
-        const finished = fixtures
-            .filter(f => f.finished && (f.team_h === teamId || f.team_a === teamId))
-            .sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime())
-            .slice(-5);
-
-        return finished.map(f => {
-            const isHome = f.team_h === teamId;
-            const hScore = f.team_h_score ?? 0;
-            const aScore = f.team_a_score ?? 0;
-
-            if (hScore === aScore) return 'D';
-            if (isHome) return hScore > aScore ? 'W' : 'L';
-            return aScore > hScore ? 'W' : 'L';
-        });
-    };
 
     // --- Logic for FDR Predictability ---
     const getFdrCheck = (homeScore: number | null, awayScore: number | null, homeDiff: any, awayDiff: any) => {
@@ -97,6 +81,24 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
         });
         return grouped;
     }, [fixtures]);
+    // --- UI Helpers ---
+    const difficultyBadgeClass = (level: string) => {
+        const lower = level.toLowerCase();
+        if (lower.includes('very hard')) return "bg-red-500/90 text-slate-50";
+        if (lower.includes('hard')) return "bg-orange-500/90 text-slate-950";
+        if (lower.includes('moderate')) return "bg-amber-500/90 text-slate-950";
+        if (lower.includes('easy')) return "bg-emerald-500/90 text-slate-950";
+        return "bg-slate-500/90 text-slate-50";
+    };
+
+    const getShortDiffLabel = (label: string) => {
+        const lower = label.toLowerCase();
+        if (lower.includes('very hard')) return 'V.HARD';
+        if (lower.includes('hard')) return 'HARD';
+        if (lower.includes('moderate')) return 'MOD';
+        if (lower.includes('easy')) return 'EASY';
+        return label;
+    };
 
     const nextEvent = events.find(e => e.is_next) || events.find(e => e.is_current) || events[0];
     const [selectedEvent, setSelectedEvent] = useState<number>(nextEvent ? nextEvent.id : 1);
@@ -155,46 +157,6 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
 
 
     const currentFixtures = fixturesByEvent[selectedEvent] || [];
-
-    // --- Statistics Calculation ---
-
-    const gwStats = useMemo(() => {
-        let totalGoals = 0;
-        let cleanSheets = 0;
-        let homeWins = 0;
-        let totalMatches = 0;
-        let correctPreds = 0;
-
-        const eventFixtures = fixturesByEvent[selectedEvent] || [];
-        const finishedFixtures = eventFixtures.filter(f => f.finished);
-
-        finishedFixtures.forEach(f => {
-            totalMatches++;
-            const h = f.team_h_score || 0;
-            const a = f.team_a_score || 0;
-            totalGoals += (h + a);
-
-            // Re-calc Clean Sheets properly
-            if ((f.team_a_score || 0) === 0) cleanSheets++;
-            if ((f.team_h_score || 0) === 0) cleanSheets++;
-
-            if (h > a) homeWins++;
-
-            // Calc Predictions
-            const homeDiff = getDifficulty(f.team_a);
-            const awayDiff = getDifficulty(f.team_h);
-            const check = getFdrCheck(h, a, homeDiff, awayDiff);
-            if (check?.label === 'Expected') correctPreds++;
-        });
-
-        return {
-            totalGoals,
-            cleanSheets,
-            homeWinPct: totalMatches > 0 ? Math.round((homeWins / totalMatches) * 100) : 0,
-            count: totalMatches,
-            correctPreds
-        };
-    }, [fixturesByEvent, selectedEvent, players, teams]); // Added players/teams deps for safety
 
     // --- Planner Data Pre-computation ---
 
@@ -290,157 +252,77 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
 
     // --- Render Components ---
 
-    const renderFormGuide = (form: string[], label?: string) => (
-        <div
-            className="flex flex-col items-center justify-center py-2 h-full w-full truncate"
-            title="Form — last 5 league matches (top = newest)."
-        >
-            {label && (
-                <span className="text-[6px] md:text-[8px] text-white/80 uppercase font-black mb-1 leading-none text-center tracking-tighter">
-                    {label}
-                </span>
-            )}
-            {/* Container for the badges - Simplified */}
-            <div className="flex flex-col gap-0.5 p-0.5 rounded border border-white/10 w-5 md:w-7 bg-black/10">
-                {[...form].reverse().map((res, i) => {
-                    let color = 'bg-slate-700 border-slate-600';
-                    if (res === 'W') color = 'bg-green-500 border-green-400 text-white shadow-sm';
-                    if (res === 'L') color = 'bg-red-500 border-red-400 text-white shadow-sm';
-                    if (res === 'D') color = 'bg-slate-500 border-slate-400 text-white';
-
-                    return (
-                        <div
-                            key={i}
-                            className={`w-3 h-3 md:w-5 md:h-4 text-[7px] md:text-[9px] font-bold flex items-center justify-center rounded-sm border ${color} mx-auto ${i === 0 ? 'ring-1 ring-white/60 z-10' : ''}`}
-                        >
-                            {res}
-                        </div>
-                    )
-                })}
-                {form.length === 0 && <span className="text-[8px] text-white/50 text-center">-</span>}
-            </div>
-        </div>
-    );
 
     const renderSchedule = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-            {/* Gameweek Stats Dashboard */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow flex items-center gap-4">
-                    <div className="p-3 bg-blue-500/20 rounded-full text-blue-400">
-                        <Trophy size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-xs text-slate-400 uppercase font-bold">Total Goals</h3>
-                        <div className="text-2xl font-bold text-white">{gwStats.totalGoals}</div>
-                        <p className="text-[10px] text-slate-500">Scored in {gwStats.count} matches</p>
-                    </div>
-                </div>
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow flex items-center gap-4">
-                    <div className="p-3 bg-green-500/20 rounded-full text-green-400">
-                        <Shield size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-xs text-slate-400 uppercase font-bold">Clean Sheets</h3>
-                        <div className="text-2xl font-bold text-white">{gwStats.cleanSheets}</div>
-                        <p className="text-[10px] text-slate-500">Defensive masterclasses</p>
-                    </div>
-                </div>
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow flex items-center gap-4">
-                    <div className="p-3 bg-purple-500/20 rounded-full text-purple-400">
-                        <Home size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-xs text-slate-400 uppercase font-bold">Home Dominance</h3>
-                        <div className="text-2xl font-bold text-white">{gwStats.homeWinPct}%</div>
-                        <p className="text-[10px] text-slate-500">Home wins ratio</p>
-                    </div>
-                </div>
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow flex items-center gap-4">
-                    <div className="p-3 bg-pink-500/20 rounded-full text-pink-400">
-                        <BrainCircuit size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-xs text-slate-400 uppercase font-bold">FDR Accuracy</h3>
-                        <div className="text-2xl font-bold text-white">{gwStats.correctPreds} / {gwStats.count}</div>
-                        <p className="text-[10px] text-slate-500">Matches following form</p>
-                    </div>
-                </div>
-            </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {currentFixtures.length > 0 ? (
                     currentFixtures.map((fixture) => {
                         // Use dynamic difficulty with actual fixture data
                         const homeDiff = getDifficulty(fixture.team_a);
                         const awayDiff = getDifficulty(fixture.team_h);
-                        const homeForm = getTeamForm(fixture.team_h);
-                        const awayForm = getTeamForm(fixture.team_a);
 
                         const fdrCheck = fixture.finished
                             ? getFdrCheck(fixture.team_h_score, fixture.team_a_score, homeDiff, awayDiff)
                             : null;
 
                         return (
-                            <div key={fixture.id} className="relative bg-slate-800 rounded-lg border border-slate-700 shadow-sm hover:border-slate-500 transition-all group z-0 hover:z-10 overflow-visible">
+                            <div key={fixture.id} className="relative bg-slate-800 rounded-lg border border-slate-700 shadow-sm hover:border-slate-500 transition-all group z-0 hover:z-10 overflow-hidden">
+                                <div className="grid grid-cols-[minmax(0,1.3fr)_auto_minmax(0,1.3fr)] items-center py-2 px-4 md:px-6 h-auto min-h-[64px] gap-3">
 
-                                {/* WIDE Difficulty Bars with Form Inside - width 3rem (w-12) on desktop, w-8 on mobile */}
-                                <div className={`absolute left-0 top-0 bottom-0 w-8 md:w-12 rounded-l-lg ${homeDiff.bg} shadow-inner border-r border-black/10`}>
-                                    {renderFormGuide(homeForm, "HOME FORM")}
-                                </div>
-
-                                <div className={`absolute right-0 top-0 bottom-0 w-8 md:w-12 rounded-r-lg ${awayDiff.bg} shadow-inner border-l border-black/10`}>
-                                    {renderFormGuide(awayForm, "AWAY FORM")}
-                                </div>
-
-                                <div className="grid grid-cols-[1fr_auto_1fr] items-center p-4 pl-10 pr-10 md:pl-16 md:pr-16 h-28 gap-2">
-
-                                    {/* Home Team */}
-                                    <div className="flex items-center justify-end gap-3 text-right overflow-hidden">
-                                        <div className="flex flex-col items-end min-w-0">
-                                            <span className="font-bold text-slate-100 text-sm md:text-xl leading-tight truncate w-full text-right">
+                                    {/* Home Team Block */}
+                                    <div className="flex flex-col items-start gap-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <TeamIcon code={getTeamShort(fixture.team_h)} alt={getTeamName(fixture.team_h)} size={24} />
+                                            <span className="text-sm md:text-lg font-bold text-slate-50 truncate leading-tight">
                                                 {getTeamName(fixture.team_h)}
                                             </span>
-                                            <span className={`text-[9px] md:text-[10px] uppercase font-bold px-1.5 rounded mt-1 ${homeDiff.bg.replace('bg-', 'text-')} truncate`}>
-                                                Op: {homeDiff.label}
-                                            </span>
                                         </div>
+                                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-tight ${difficultyBadgeClass(homeDiff.label)}`}>
+                                            {getShortDiffLabel(homeDiff.label)}
+                                        </span>
                                     </div>
 
-                                    {/* Score / Time */}
-                                    <div className="flex flex-col items-center min-w-[80px] md:min-w-[120px] px-2 relative">
+                                    {/* Center Block: Status / Score / Time */}
+                                    <div className="flex flex-col items-center min-w-[80px] md:min-w-[120px] px-1">
                                         {fixture.finished ? (
                                             <>
-                                                <div className="bg-slate-900 px-2 md:px-4 py-1.5 rounded border border-slate-600 mb-1 shadow-inner">
-                                                    <div className="text-xl md:text-2xl font-bold text-white tracking-widest font-mono">
-                                                        {fixture.team_h_score} - {fixture.team_a_score}
+                                                <div className="bg-slate-900 px-3 py-1 rounded-lg border border-slate-700 mb-1 shadow-inner">
+                                                    <div className="text-xl md:text-2xl font-black text-white tracking-widest font-mono">
+                                                        {fixture.team_h_score}-{fixture.team_a_score}
                                                     </div>
                                                 </div>
                                                 {fdrCheck && (
-                                                    <div className={`flex items-center gap-1 text-[9px] md:text-[10px] uppercase font-bold ${fdrCheck.color} whitespace-nowrap`}>
-                                                        <fdrCheck.icon size={12} /> {fdrCheck.label}
+                                                    <div className={`flex items-center gap-1 text-[9px] md:text-[10px] uppercase font-black ${fdrCheck.color} whitespace-nowrap opacity-90`}>
+                                                        <fdrCheck.icon size={10} /> {fdrCheck.label}
                                                     </div>
                                                 )}
                                             </>
                                         ) : (
-                                            <div className="text-center">
-                                                <div className="text-white font-bold text-base md:text-lg">{new Date(fixture.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                                <div className="text-[10px] md:text-xs text-slate-500 uppercase font-bold">{new Date(fixture.kickoff_time).toLocaleDateString([], { weekday: 'short', day: 'numeric' })}</div>
+                                            <div className="text-center bg-slate-900/50 px-2 py-1 rounded-lg border border-slate-700/50">
+                                                <div className="text-white font-black text-xs md:text-base leading-none">
+                                                    {new Date(fixture.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                                <div className="text-[9px] md:text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider">
+                                                    {new Date(fixture.kickoff_time).toLocaleDateString([], { weekday: 'short', day: 'numeric' })}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Away Team */}
-                                    <div className="flex items-center justify-start gap-3 text-left overflow-hidden">
-                                        <div className="flex flex-col items-start min-w-0">
-                                            <span className="font-bold text-slate-100 text-sm md:text-xl leading-tight truncate w-full">
+                                    {/* Away Team Block */}
+                                    <div className="flex flex-col items-end gap-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-row-reverse">
+                                            <TeamIcon code={getTeamShort(fixture.team_a)} alt={getTeamName(fixture.team_a)} size={24} />
+                                            <span className="text-sm md:text-lg font-bold text-slate-50 truncate leading-tight text-right">
                                                 {getTeamName(fixture.team_a)}
                                             </span>
-                                            <span className={`text-[9px] md:text-[10px] uppercase font-bold px-1.5 rounded mt-1 ${awayDiff.bg.replace('bg-', 'text-')} truncate`}>
-                                                Op: {awayDiff.label}
-                                            </span>
                                         </div>
+                                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-tight ${difficultyBadgeClass(awayDiff.label)}`}>
+                                            {getShortDiffLabel(awayDiff.label)}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -456,24 +338,26 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
     const renderPlanner = () => {
         return (
             <div className="overflow-x-auto bg-slate-800 rounded-lg shadow-lg border border-slate-700 animate-in fade-in zoom-in duration-300 pb-20">
-                <table className="w-full text-left border-collapse min-w-[550px] md:min-w-full">
+                <table className="w-full text-left border-collapse md:min-w-full">
                     <thead>
                         <tr className="bg-slate-900 text-slate-400 text-[10px] md:text-xs uppercase tracking-wider">
-                            <th className="p-3 md:p-4 sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-xl">Team</th>
-                            {planningGws.map(gw => (
-                                <th key={gw} className="p-2 text-center w-20 md:w-24 border-r border-slate-800 whitespace-nowrap">GW {gw}</th>
-                            ))}
                             <th
-                                className="p-2 text-right w-20 md:w-24 cursor-pointer hover:text-white transition-colors group"
+                                className="p-0.5 md:p-2 text-center w-9 md:w-16 sticky left-0 bg-slate-900 z-30 border-r border-slate-700 shadow-xl cursor-pointer hover:text-white transition-colors group"
                                 onClick={togglePlannerSort}
                             >
-                                <div className="flex items-center justify-end gap-1">
-                                    <span>DIFF SCORE</span>
-                                    <span className="text-purple-400">
+                                <div className="flex flex-col items-center justify-center">
+                                    <span className="leading-tight hidden md:block text-[10px] md:text-xs">DIFF</span>
+                                    <span className="leading-tight hidden md:block text-[10px] md:text-xs">SCORE</span>
+                                    <span className="leading-tight md:hidden text-[9px] font-black">DIFF</span>
+                                    <span className="text-purple-400 text-[8px] mt-0.5">
                                         {plannerSortMode === 'asc' ? '↑' : plannerSortMode === 'desc' ? '↓' : ''}
                                     </span>
                                 </div>
                             </th>
+                            <th className="p-1 md:p-3 sticky left-[36px] md:left-[64px] bg-slate-900 z-20 border-r border-slate-700 shadow-xl text-[9px] md:text-xs w-16 md:w-48">Team</th>
+                            {planningGws.map(gw => (
+                                <th key={gw} className="p-0.5 md:p-2 text-center w-10 md:w-24 border-r border-slate-800 whitespace-nowrap text-[8px] md:text-xs">GW {gw}</th>
+                            ))}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700/50">
@@ -487,11 +371,25 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                                         className={`hover:bg-slate-700/30 transition-all cursor-pointer group/row ${isExpanded ? 'bg-slate-700/20' : ''}`}
                                         onClick={() => setExpandedTeamId(isExpanded ? null : team.id)}
                                     >
-                                        <td className="p-2 md:p-3 font-bold text-slate-200 sticky left-0 bg-slate-800 z-10 border-r border-slate-700 shadow-xl text-xs md:text-sm whitespace-nowrap">
-                                            <div className="flex items-center gap-2">
-                                                <ChevronRight size={14} className={`text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-purple-400' : ''}`} />
-                                                <span className="sm:hidden">{team.short_name}</span>
-                                                <span className="hidden sm:block">{team.name}</span>
+                                        <td className="p-1 md:p-3 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700 shadow-xl w-9 md:w-16">
+                                            <span className={`text-xs md:text-base font-black font-mono ${team.diffScore <= 10 ? 'text-green-400' :
+                                                team.diffScore >= 18 ? 'text-red-400' :
+                                                    'text-slate-200'
+                                                }`}>
+                                                {team.diffScore}
+                                            </span>
+                                        </td>
+                                        <td className="p-1 md:p-3 font-bold text-slate-200 sticky left-[36px] md:left-[64px] bg-slate-800 z-10 border-r border-slate-700 shadow-xl text-[10px] md:text-sm whitespace-nowrap w-16 md:w-48">
+                                            <div className="flex items-center gap-1 md:gap-1.5 overflow-hidden">
+                                                <ChevronRight size={12} className={`shrink-0 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-purple-400' : ''} hidden md:block`} />
+                                                <span className="sm:hidden truncate max-w-[32px]">{team.short_name}</span>
+                                                <span className="hidden sm:block truncate">{team.name}</span>
+                                                {(team as any).hasEasyRun && (
+                                                    <span className="shrink-0 flex items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[8px] md:text-[10px] w-3.5 h-3.5 md:w-auto md:h-auto md:px-2 md:py-0.5 whitespace-nowrap shadow-[0_0_8px_rgba(16,185,129,0.1)]">
+                                                        <span className="md:hidden">3</span>
+                                                        <span className="hidden md:inline">3× EASY</span>
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         {planningGws.map((gw, index) => {
@@ -502,7 +400,6 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
 
                                             if (!match) return (
                                                 <td key={gw} className="p-2 bg-slate-900/50 relative">
-                                                    {isEasyStreakCell && <div className="absolute inset-x-1 -bottom-1 h-0.5 rounded-full bg-emerald-400/70 pointer-events-none z-10" />}
                                                 </td>
                                             );
 
@@ -514,67 +411,53 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                                             return (
                                                 <td key={gw} className="p-0.5 md:p-1 border-r border-slate-700/50 relative group">
                                                     <div
-                                                        className={`w-full h-9 md:h-12 rounded flex flex-col items-center justify-center ${difficulty.bg} ${difficulty.text} shadow-sm cursor-default border-b-2 ${difficulty.border} hover:brightness-110 transition-all relative`}
+                                                        className={`w-full rounded-lg flex flex-col items-center justify-center px-2.5 py-1.5 md:px-3 md:py-2 text-[10px] md:text-[11px] font-semibold ${difficulty.bg} ${difficulty.text} shadow-sm cursor-default border-b-2 ${difficulty.border} hover:brightness-110 transition-all relative`}
                                                         title={`${getTeamName(opponentId)} | FDR: ${difficulty.label} (${difficulty.score}/5) | Form: ${difficulty.threat.toFixed(0)}`}
                                                     >
-                                                        {isEasyStreakCell && <div className="absolute inset-x-1 -bottom-1 h-0.5 rounded-full bg-emerald-400/70 pointer-events-none z-10" />}
-                                                        <span className="text-[10px] md:text-xs font-bold leading-tight">{opponentShort} ({isHome ? 'H' : 'A'})</span>
-                                                        <span className="text-[8px] md:text-[10px] font-mono opacity-80">{difficulty.score}</span>
+                                                        <span className="leading-tight">
+                                                            {opponentShort}
+                                                            <span className="hidden sm:inline"> ({isHome ? 'H' : 'A'})</span>
+                                                        </span>
+                                                        <span className="text-[6px] md:text-[9px] font-mono opacity-80 leading-none">{difficulty.score}</span>
                                                     </div>
                                                 </td>
                                             );
                                         })}
-                                        <td className="p-2 md:p-4 text-right">
-                                            <span className={`text-sm md:text-base font-black font-mono ${team.diffScore <= 10 ? 'text-green-400' :
-                                                team.diffScore >= 18 ? 'text-red-400' :
-                                                    'text-slate-200'
-                                                }`}>
-                                                {team.diffScore}
-                                            </span>
-                                            {(team as any).hasEasyRun && (
-                                                <span className="ml-2 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 border border-emerald-500/40 whitespace-nowrap">
-                                                    3× EASY
-                                                </span>
-                                            )}
-                                        </td>
                                     </tr>
                                     {isExpanded && (
                                         <tr className="bg-slate-950/40 border-l-2 border-purple-500/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <td colSpan={planningGws.length + 2} className="p-3 md:p-4">
-                                                <div className="flex flex-col gap-3">
-                                                    <div className="flex items-center gap-2 text-slate-400 text-[10px] md:text-xs uppercase font-bold tracking-wider mb-1">
-                                                        <User size={14} className="text-purple-400" />
-                                                        Top Assets by Transfer Index
+                                            <td colSpan={planningGws.length + 2} className="p-1.5 md:p-3">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1.5 text-slate-500 text-[9px] md:text-[10px] uppercase font-black tracking-tight mb-0.5">
+                                                        <History size={12} className="text-purple-400" />
+                                                        Key Assets
                                                     </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 md:gap-3">
                                                         {playersForTeam.map(p => (
-                                                            <div key={p.id} className="bg-slate-900/80 rounded-xl border border-slate-700/50 p-3 flex flex-col gap-2 hover:border-slate-500 transition-colors shadow-lg">
-                                                                <div className="flex justify-between items-start">
-                                                                    <div>
-                                                                        <div className="font-bold text-slate-100 text-sm">{p.web_name}</div>
-                                                                        <div className="text-[10px] text-slate-500 uppercase font-medium">
-                                                                            {getPositionLabel(p.element_type)} · £{p.now_cost / 10}
+                                                            <div key={p.id} className="bg-slate-900/40 rounded md:rounded-xl border border-slate-700/30 p-1.5 md:p-3 flex flex-col gap-0.5 md:gap-2 hover:border-slate-500 transition-colors">
+                                                                <div className="font-bold text-slate-100 text-[11px] md:text-sm truncate">{p.web_name}</div>
+                                                                <div className="flex items-center text-[9px] md:text-[11px]">
+                                                                    <div className="flex items-center gap-2 md:gap-4 truncate font-medium">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="uppercase text-slate-500 text-[7px] md:text-[8px]">Pos</span>
+                                                                            <span className="text-slate-200 font-bold uppercase">{getPositionLabel(p.element_type)}</span>
                                                                         </div>
-                                                                    </div>
-                                                                    <div
-                                                                        className="bg-purple-500/10 text-purple-400 text-[10px] font-black px-1.5 py-0.5 rounded border border-purple-500/20 ml-3"
-                                                                        title="Transfer Index is a combined score of recent form and fixture difficulty. Higher = better. 60 = above average."
-                                                                    >
-                                                                        TI {Math.round(p.transferIndex * 100)}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex justify-between items-end mt-1">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[8px] text-slate-500 uppercase font-bold leading-none mb-1">Recent Form</span>
-                                                                        <span className="text-lg font-black text-white leading-none">{p.form}</span>
-                                                                    </div>
-                                                                    <div className="text-right">
-                                                                        <div className="text-[8px] text-slate-500 uppercase font-bold leading-none mb-1">Next 5 Diff</div>
-                                                                        <div className={`text-xs font-mono font-bold ${p.fixtureDifficultySum <= 10 ? 'text-green-400' :
-                                                                            p.fixtureDifficultySum >= 18 ? 'text-red-400' :
-                                                                                'text-slate-300'
-                                                                            }`}>
-                                                                            {p.fixtureDifficultySum}
+                                                                        <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 md:pl-4">
+                                                                            <span className="text-[7px] md:text-[8px] text-slate-500 uppercase">Cost</span>
+                                                                            <span className="text-slate-200 font-bold">£{p.now_cost / 10}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 md:pl-4">
+                                                                            <span className="text-[7px] md:text-[8px] text-slate-500 uppercase">Form</span>
+                                                                            <span className="text-slate-100 font-bold">{p.form}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 md:pl-4">
+                                                                            <span className="text-[7px] md:text-[8px] text-slate-500 uppercase">Diff</span>
+                                                                            <span className={`font-mono font-bold ${p.fixtureDifficultySum <= 10 ? 'text-green-400' :
+                                                                                p.fixtureDifficultySum >= 18 ? 'text-red-400' :
+                                                                                    'text-slate-100'
+                                                                                }`}>
+                                                                                {p.fixtureDifficultySum}
+                                                                            </span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -596,59 +479,59 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
 
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-6">
 
             {/* Header & Controls */}
-            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div className="bg-slate-800 p-3 md:p-6 rounded-xl border border-slate-700 shadow-lg">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2 md:gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold flex items-center gap-2 text-white mb-2">
-                            <Calendar className="w-6 h-6 text-purple-400" />
+                        <h2 className="text-lg md:text-2xl font-bold flex items-center gap-2 text-white mb-0.5 md:mb-2">
+                            <Calendar className="w-4 h-4 md:w-6 md:h-6 text-purple-400" />
                             Fixtures & FDR Planner
                         </h2>
                     </div>
 
-                    <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
+                    <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700 w-full md:w-auto">
                         <button
                             onClick={() => setActiveTab('schedule')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'schedule' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-2 rounded-md text-[10px] md:text-sm font-bold transition-all ${activeTab === 'schedule' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                         >
-                            <Calendar size={16} /> Schedule
+                            <Calendar size={12} className="md:w-3.5 md:h-3.5" /> Schedule
                         </button>
                         <button
                             onClick={() => setActiveTab('planner')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'planner' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-2 rounded-md text-[10px] md:text-sm font-bold transition-all ${activeTab === 'planner' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                         >
-                            <LayoutGrid size={16} /> FDR Matrix
+                            <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" /> FDR Matrix
                         </button>
                     </div>
                 </div>
 
                 {/* Filter Controls Row */}
-                <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                <div className="mt-3 md:mt-6 flex flex-col sm:flex-row gap-2 md:gap-4 items-center bg-slate-900/50 p-1.5 md:p-3 rounded-lg border border-slate-700">
 
                     {/* Month Selector */}
                     <div className="relative w-full sm:w-auto">
                         <select
                             value={selectedMonth}
                             onChange={(e) => handleMonthChange(e.target.value)}
-                            className="w-full sm:w-48 appearance-none bg-slate-800 text-white text-sm font-bold border border-slate-600 rounded px-4 py-2 pr-8 focus:ring-2 focus:ring-purple-500 outline-none"
+                            className="w-full sm:w-48 appearance-none bg-slate-800 text-white text-[11px] md:text-sm font-bold border border-slate-600 rounded px-3 md:px-4 py-1 md:py-2 pr-8 focus:ring-2 focus:ring-purple-500 outline-none"
                         >
                             {months.map(m => (
                                 <option key={m.name} value={m.name}>{m.name}</option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
                     </div>
 
                     {/* Navigation Buttons */}
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
+                    <div className="flex items-center gap-1.5 md:gap-2 w-full sm:w-auto justify-center">
                         <button
                             onClick={handlePrevGw}
                             disabled={selectedEvent <= 1}
-                            className="p-2 bg-slate-800 rounded border border-slate-600 text-white hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                            className="p-1 md:p-2 bg-slate-800 rounded border border-slate-600 text-white hover:bg-slate-700 disabled:opacity-50 transition-colors"
                         >
-                            <ChevronLeft size={16} />
+                            <ChevronLeft size={14} className="md:w-4 md:h-4" />
                         </button>
 
                         {/* Gameweek Selector */}
@@ -656,45 +539,45 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                             <select
                                 value={selectedEvent}
                                 onChange={(e) => handleGwChange(Number(e.target.value))}
-                                className="w-full sm:w-64 appearance-none bg-slate-800 text-white text-sm font-bold border border-slate-600 rounded px-4 py-2 pr-8 focus:ring-2 focus:ring-purple-500 outline-none text-center"
+                                className="w-full sm:w-64 appearance-none bg-slate-800 text-white text-[11px] md:text-sm font-bold border border-slate-600 rounded px-2 md:px-4 py-1 md:py-2 pr-8 focus:ring-2 focus:ring-purple-500 outline-none text-center"
                             >
                                 {months.find(m => m.name === selectedMonth)?.events.map(e => (
                                     <option key={e.id} value={e.id}>
-                                        {e.name} {e.is_current ? '(Current)' : e.is_next ? '(Next)' : ''}
+                                        {e.name} {e.is_current ? '(Cur)' : e.is_next ? '(Next)' : ''}
                                     </option>
                                 ))}
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
                         </div>
 
                         <button
                             onClick={handleNextGw}
                             disabled={selectedEvent >= 38}
-                            className="p-2 bg-slate-800 rounded border border-slate-600 text-white hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                            className="p-1 md:p-2 bg-slate-800 rounded border border-slate-600 text-white hover:bg-slate-700 disabled:opacity-50 transition-colors"
                         >
-                            <ChevronRight size={16} />
+                            <ChevronRight size={14} className="md:w-4 md:h-4" />
                         </button>
                     </div>
                 </div>
 
                 {/* New Premium Collapsible Info Section */}
-                <div className="mt-6 bg-slate-900/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg transition-all border-l-4 border-l-purple-500/50">
+                <div className="mt-3 md:mt-6 bg-slate-900/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg transition-all border-l-4 border-l-purple-500/50">
                     <button
                         onClick={() => setShowInfo(!showInfo)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-800/40 transition-all group"
+                        className="w-full flex items-center justify-between p-2 md:p-4 hover:bg-slate-800/40 transition-all group"
                     >
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
-                                <HelpCircle size={20} className="text-purple-400" />
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <div className="p-1 md:p-2 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
+                                <HelpCircle size={16} className="md:w-4.5 md:h-4.5" />
                             </div>
                             <div className="text-left">
-                                <h4 className="font-bold text-white text-sm md:text-base">Understanding our Dynamic Model & Difficulty Legend</h4>
-                                <p className="text-[10px] md:text-xs text-slate-400">Learn how we calculate fixture difficulty beyond the standard FPL FDR</p>
+                                <h4 className="font-bold text-white text-[11px] md:text-base">Understanding our Dynamic Model</h4>
+                                <p className="text-[9px] md:text-xs text-slate-400 hidden md:block">How we calculate difficulty beyond FPL FDR</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hidden md:inline">{showInfo ? 'Close' : 'View Details'}</span>
-                            {showInfo ? <ChevronUp size={20} className="text-purple-400" /> : <ChevronDown size={20} className="text-purple-400" />}
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest hidden md:inline">{showInfo ? 'Close' : 'Details'}</span>
+                            {showInfo ? <ChevronUp size={16} className="text-purple-400" /> : <ChevronDown size={16} className="text-purple-400" />}
                         </div>
                     </button>
 
