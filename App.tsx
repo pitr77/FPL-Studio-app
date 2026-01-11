@@ -16,10 +16,12 @@ import OptimalSquad from './components/OptimalSquad';
 import TeamAnalysis from './components/TeamAnalysis';
 import PeriodAnalysis from './components/PeriodAnalysis';
 import CompareMode from './components/CompareMode';
+import AnalyticsTracker from './components/AnalyticsTracker';
+import { initGA } from './lib/analytics';
 // import ScoutChat from './components/ScoutChat'; // Temporarily disabled
 import { LayoutDashboard, Calendar, Shirt, BarChart2, BrainCircuit, Menu, X, RefreshCw, Users, Trophy, ArrowLeftRight, Activity, Zap, Search, CalendarRange, Split } from 'lucide-react';
 
-enum View {
+export enum View {
   DASHBOARD,
   FIXTURES,
   TEAM,
@@ -82,6 +84,7 @@ function App() {
 
   useEffect(() => {
     fetchData();
+    initGA();
   }, []);
 
   const loadProfileTier = async () => {
@@ -278,6 +281,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-gray-100 flex flex-col">
+      <AnalyticsTracker currentView={View[view]} />
 
       {/* Top Header - Desktop only */}
       <header className="hidden md:flex sticky top-0 z-50 h-14 w-full bg-slate-900/80 backdrop-blur-md border-b border-white/5 items-center px-6 justify-between">
@@ -359,7 +363,14 @@ function App() {
         {/* Main Content */}
         <main className="flex-1 h-[calc(100vh-3.5rem)] md:h-screen overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 scroll-smooth custom-scrollbar">
           <div className={`${view === View.COMPARE_MODE ? 'w-full' : 'max-w-7xl'} mx-auto h-full`}>
-            {view === View.DASHBOARD && <Dashboard data={data} myTeam={myTeam} fixtures={fixtures} />}
+            {view === View.DASHBOARD && (
+              <Dashboard
+                data={data}
+                myTeam={myTeam}
+                fixtures={fixtures}
+                onNavigate={handleNavigate}
+              />
+            )}
 
             {view === View.LOCKED && (
               <div className="max-w-xl mx-auto bg-slate-900/60 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
