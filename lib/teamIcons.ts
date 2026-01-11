@@ -1,0 +1,27 @@
+// Mapping of FPL Team Short Codes to icon paths.
+export const TEAM_ICONS: Record<string, string> = {
+    ARS: "/icons/clubs/arsenal.svg",
+    AVL: "/icons/clubs/aston_villa.svg",
+    BHA: "/icons/clubs/Brighton and Hove Albion.svg",
+    BRE: "/icons/clubs/Brentford.svg",
+    BOU: "/icons/clubs/bournemouth.svg",
+    CHE: "/icons/clubs/Chelsea.svg",
+    CRY: "/icons/clubs/Crystal_palace.svg",
+    EVE: "/icons/clubs/everton.svg",
+    FUL: "/icons/clubs/Fulham.svg",
+    LEE: "/icons/clubs/Leeds United.svg",
+    LIV: "/icons/clubs/Liverpool.svg",
+    MCI: "/icons/clubs/Manchester City.svg",
+    MUN: "/icons/clubs/Manchester United.svg",
+    NEW: "/icons/clubs/Newcastle United.svg",
+    NFO: "/icons/clubs/Nottingham Forest.svg",
+    SUN: "/icons/clubs/Sunderland.svg",
+    TOT: "/icons/clubs/Tottenham Hotspur.svg",
+    WHU: "/icons/clubs/West Ham United.svg",
+    WOL: "/icons/clubs/Wolverhampton Wanderers.svg",
+    BUR: "/icons/clubs/burnley.svg",
+    // Fallbacks for current season teams if SVGs missing
+    IPS: "/icons/clubs/ipswich.png",
+    LEI: "/icons/clubs/leicester.png",
+    SOU: "/icons/clubs/southampton.png",
+};
