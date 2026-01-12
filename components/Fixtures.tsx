@@ -344,24 +344,24 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
             <div className="space-y-4">
                 {/* Desktop/Tablet Table (Hidden on small screens) */}
                 <div className="hidden md:block overflow-x-auto bg-slate-800 rounded-lg shadow-lg border border-slate-700 animate-in fade-in zoom-in duration-300 pb-20">
-                    <table className="w-full text-left border-collapse min-w-full">
+                    <table className="w-full text-left border-collapse md:table-auto">
                         <thead>
-                            <tr className="bg-slate-900 text-slate-400 text-xs uppercase tracking-wider">
+                            <tr className="bg-slate-900 text-slate-400 text-sm uppercase tracking-wider font-bold">
                                 <th
-                                    className="p-2 text-center w-16 sticky left-0 bg-slate-900 z-30 border-r border-slate-700 shadow-xl cursor-pointer hover:text-white transition-colors group"
+                                    className="p-4 md:p-5 text-center w-20 sticky left-0 bg-slate-900 z-30 border-r border-slate-700 shadow-xl cursor-pointer hover:text-white transition-colors group"
                                     onClick={togglePlannerSort}
                                 >
                                     <div className="flex flex-col items-center justify-center">
-                                        <span className="leading-tight text-xs">DIFF</span>
-                                        <span className="leading-tight text-xs">SCORE</span>
-                                        <span className="text-purple-400 text-[8px] mt-0.5">
+                                        <span className="leading-tight text-[10px]">AVG</span>
+                                        <span className="leading-tight text-[10px]">DIFF</span>
+                                        <span className="text-purple-400 text-xs mt-0.5">
                                             {plannerSortMode === 'asc' ? '↑' : plannerSortMode === 'desc' ? '↓' : ''}
                                         </span>
                                     </div>
                                 </th>
-                                <th className="p-3 sticky left-[64px] bg-slate-900 z-20 border-r border-slate-700 shadow-xl text-xs w-48">Team</th>
+                                <th className="p-4 md:p-5 sticky left-[80px] bg-slate-900 z-20 border-r border-slate-700 shadow-xl text-sm w-64">Team</th>
                                 {planningGws.map(gw => (
-                                    <th key={gw} className="p-2 text-center w-24 border-r border-slate-800 whitespace-nowrap text-xs">GW {gw}</th>
+                                    <th key={gw} className="p-4 md:p-5 text-center w-28 border-r border-slate-800 whitespace-nowrap text-sm">GW {gw}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -376,17 +376,17 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                                             className={`hover:bg-slate-700/30 transition-all cursor-pointer group/row ${isExpanded ? 'bg-slate-700/20' : ''}`}
                                             onClick={() => setExpandedTeamId(isExpanded ? null : team.id)}
                                         >
-                                            <td className="p-3 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700 shadow-xl w-16">
-                                                <span className={`text-base font-black font-mono ${team.diffScore <= 10 ? 'text-green-400' :
+                                            <td className="p-4 md:p-5 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700 shadow-xl w-20">
+                                                <span className={`text-xl font-black font-mono ${team.diffScore <= 10 ? 'text-green-400' :
                                                     team.diffScore >= 18 ? 'text-red-400' :
                                                         'text-slate-200'
                                                     }`}>
                                                     {team.diffScore}
                                                 </span>
                                             </td>
-                                            <td className="p-3 font-bold text-slate-200 sticky left-[64px] bg-slate-800 z-10 border-r border-slate-700 shadow-xl text-sm whitespace-nowrap w-48">
-                                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                                    <ChevronRight size={12} className={`shrink-0 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-purple-400' : ''}`} />
+                                            <td className="p-4 md:p-5 font-bold text-white sticky left-[80px] bg-slate-800 z-10 border-r border-slate-700 shadow-xl text-base whitespace-nowrap w-64">
+                                                <div className="flex items-center gap-2 overflow-hidden">
+                                                    <ChevronRight size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-purple-400' : ''}`} />
                                                     <span className="truncate">{team.name}</span>
                                                     {(team as any).hasEasyRun && (
                                                         <span className="shrink-0 flex items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] px-2 py-0.5 whitespace-nowrap shadow-[0_0_8px_rgba(16,185,129,0.1)]">
@@ -399,7 +399,7 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                                                 const gwFixtures = fixturesByEvent[gw] || [];
                                                 const match = gwFixtures.find(f => f.team_h === team.id || f.team_a === team.id);
 
-                                                if (!match) return <td key={gw} className="p-2 bg-slate-900/50 relative"></td>;
+                                                if (!match) return <td key={gw} className="p-4 md:p-5 bg-slate-900/50 relative"></td>;
 
                                                 const isHome = match.team_h === team.id;
                                                 const opponentId = isHome ? match.team_a : match.team_h;
@@ -407,7 +407,7 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                                                 const difficulty = getDifficulty(opponentId);
 
                                                 return (
-                                                    <td key={gw} className="p-1 border-r border-slate-700/50 relative group">
+                                                    <td key={gw} className="p-2 md:p-3 border-r border-slate-700/50 relative group">
                                                         <ResultChip
                                                             label={`${opponentShort}${isHome ? 'H' : 'A'}`}
                                                             value={String(difficulty.score)}
@@ -415,38 +415,36 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                                                             borderClass={`border-b-2 ${difficulty.border}`}
                                                             textClass={difficulty.text}
                                                             title={`${getTeamName(opponentId)} | FDR: ${difficulty.label} (${difficulty.score}/5)`}
-                                                            className="w-full hover:brightness-110"
+                                                            className="w-full hover:brightness-110 h-10"
                                                         />
                                                     </td>
                                                 );
                                             })}
                                         </tr>
                                         {isExpanded && (
-                                            <tr className="bg-slate-950/40 border-l-2 border-purple-500/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                <td colSpan={planningGws.length + 2} className="p-3">
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="flex items-center gap-1.5 text-slate-500 text-[10px] uppercase font-black tracking-tight mb-0.5">
-                                                            <History size={12} className="text-purple-400" />
-                                                            Key Assets
+                                            <tr className="bg-slate-950/40 border-l-4 border-purple-500 animation-in slide-in-from-top-2 duration-300">
+                                                <td colSpan={planningGws.length + 2} className="p-6">
+                                                    <div className="flex flex-col gap-4">
+                                                        <div className="flex items-center gap-2 text-purple-400 text-xs uppercase font-black tracking-widest">
+                                                            <History size={16} />
+                                                            Key Assets for {team.name}
                                                         </div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                             {playersForTeam.map(p => (
-                                                                <div key={p.id} className="bg-slate-900/40 rounded-xl border border-slate-700/30 p-3 flex flex-col gap-2 hover:border-slate-500 transition-colors">
-                                                                    <div className="font-bold text-slate-100 text-sm truncate">{p.web_name}</div>
-                                                                    <div className="flex items-center text-[11px]">
-                                                                        <div className="flex items-center gap-4 truncate font-medium">
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <span className="uppercase text-slate-500 text-[8px]">Pos</span>
-                                                                                <span className="text-slate-200 font-bold uppercase">{getPositionLabel(p.element_type)}</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-4 border-l border-white/10 pl-4">
-                                                                                <span className="text-[8px] text-slate-500 uppercase">Cost</span>
-                                                                                <span className="text-slate-200 font-bold">£{p.now_cost / 10}</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-4 border-l border-white/10 pl-4">
-                                                                                <span className="text-[8px] text-slate-500 uppercase">Form</span>
-                                                                                <span className="text-slate-100 font-bold">{p.form}</span>
-                                                                            </div>
+                                                                <div key={p.id} className="bg-slate-900/60 rounded-xl border border-slate-700/50 p-4 flex flex-col gap-3 hover:border-purple-500/50 transition-all hover:shadow-lg group/asset">
+                                                                    <div className="font-bold text-white text-base truncate group-hover/asset:text-purple-300 transition-colors">{p.web_name}</div>
+                                                                    <div className="flex items-center justify-between text-xs">
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="uppercase text-slate-500 text-[9px] font-black">Position</span>
+                                                                            <span className="text-slate-200 font-bold">{getPositionLabel(p.element_type)}</span>
+                                                                        </div>
+                                                                        <div className="flex flex-col gap-1 border-l border-slate-700 pl-4">
+                                                                            <span className="text-[9px] text-slate-500 uppercase font-black">Cost</span>
+                                                                            <span className="text-slate-200 font-bold">£{p.now_cost / 10}m</span>
+                                                                        </div>
+                                                                        <div className="flex flex-col gap-1 border-l border-slate-700 pl-4">
+                                                                            <span className="text-[9px] text-slate-500 uppercase font-black">Form</span>
+                                                                            <span className="text-white font-black">{p.form}</span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
