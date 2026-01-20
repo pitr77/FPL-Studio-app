@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Script from 'next/script';
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 export const metadata = {
   title: 'FPL STUDIO',
@@ -10,13 +11,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <GoogleAnalytics />
         {/* Tailwind via CDN (kept to avoid a full styling migration today). */}
         <Script src="https://cdn.tailwindcss.com" strategy="beforeInteractive" />
-        <Script
-          src="https://cloud.umami.is/script.js"
-          data-website-id="f06378a6-252d-46a8-be92-44bcaaf0e7fc"
-          strategy="afterInteractive"
-        />
+
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
           rel="stylesheet"
