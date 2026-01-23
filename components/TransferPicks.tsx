@@ -4,6 +4,7 @@ import { ArrowLeftRight, TrendingUp, Calendar, DollarSign, Filter, Info, Chevron
 import ResultChip from './ResultChip';
 import { calculateLeaguePositions, getDynamicDifficulty } from '../lib/fdrModel';
 import { computeTransferIndexForPlayers, TransferIndexResult } from '../lib/transferIndex';
+import { track } from '@/lib/ga';
 
 interface TransferPicksProps {
     players: FPLPlayer[];
@@ -214,6 +215,8 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                         onClick={() => {
                             setActivePos(pos);
                             setExpandedPlayerId(null);
+                            const posLabels: Record<number, string> = { 1: "GKP", 2: "DEF", 3: "MID", 4: "FWD" };
+                            track("transfer_picks_interaction", { action: "select_position", position: posLabels[pos] });
                         }}
                         className={`px-2 md:px-6 py-3 rounded-lg font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all ${activePos === pos ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
                     >
@@ -266,27 +269,40 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
 
                                 {/* Metrics & Fixtures Grid */}
                                 <div className="space-y-2">
-                                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                                    <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                                         {/* Transfer Index Bar */}
                                         <div className="space-y-0.5">
                                             <div className="flex justify-between text-[8px] uppercase font-bold text-slate-500">
                                                 <span className="truncate mr-1">TRANSFER INDEX</span>
-                                                <span className="text-blue-400">{Math.round(p.transferIndex * 100)}</span>
+                                                <span className="text-blue-400 font-mono font-black">{Math.round(p.transferIndex * 100)}</span>
                                             </div>
-                                            <div className="h-1 w-full bg-slate-900 rounded-full overflow-hidden">
+                                            <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                                                 <div
                                                     className={`h-full ${p.transferIndex > 0.7 ? 'bg-green-500' : 'bg-blue-500'}`}
                                                     style={{ width: `${p.transferIndex * 100}%` }}
                                                 />
                                             </div>
                                         </div>
+                                        {/* Form Bar */}
+                                        <div className="space-y-0.5">
+                                            <div className="flex justify-between text-[8px] uppercase font-bold text-slate-500">
+                                                <span>FORM</span>
+                                                <span className="text-green-400 font-mono font-black">{p.form}</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-green-500"
+                                                    style={{ width: `${Math.min(1, parseFloat(p.form) / 10) * 100}%` }}
+                                                />
+                                            </div>
+                                        </div>
                                         {/* Diff Score Bar */}
                                         <div className="space-y-0.5">
                                             <div className="flex justify-between text-[8px] uppercase font-bold text-slate-500">
-                                                <span>Diff</span>
-                                                <span className="text-purple-500">{diffScore}</span>
+                                                <span>DIFF</span>
+                                                <span className="text-purple-500 font-mono font-black">{diffScore}</span>
                                             </div>
-                                            <div className="h-1 w-full bg-slate-900 rounded-full overflow-hidden">
+                                            <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-purple-500"
                                                     style={{ width: `${diffWidth}%` }}
@@ -294,12 +310,12 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                                             </div>
                                         </div>
                                         {/* Ownership Bar */}
-                                        <div className="space-y-0.5 col-span-2">
+                                        <div className="space-y-0.5">
                                             <div className="flex justify-between text-[8px] uppercase font-bold text-slate-500">
-                                                <span>Ownership</span>
-                                                <span className="text-slate-300 font-mono">{p.selected_by_percent}%</span>
+                                                <span>OWNERSHIP</span>
+                                                <span className="text-slate-300 font-mono font-black">{p.selected_by_percent}%</span>
                                             </div>
-                                            <div className="h-1 w-full bg-slate-900 rounded-full overflow-hidden">
+                                            <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-slate-500"
                                                     style={{ width: `${Math.min(parseFloat(p.selected_by_percent), 100)}%` }}
@@ -309,8 +325,11 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                                     </div>
 
                                     {/* Fixtures Timeline */}
-                                    <div className="space-y-1">
-                                        <div className="flex gap-0.5 h-1 w-full bg-slate-900 rounded-full overflow-hidden">
+                                    <div className="space-y-0.5 pt-1">
+                                        <div className="flex justify-between text-[8px] uppercase font-bold text-slate-500">
+                                            <span>Upcoming Fixtures</span>
+                                        </div>
+                                        <div className="flex gap-0.5 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                                             {p.nextFixtures.slice(0, 5).map((f, i) => (
                                                 <div
                                                     key={i}
@@ -318,9 +337,6 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                                                     title={f.opponent === 0 ? "BLANK" : `GW${f.event} vs ${getTeamShort(f.opponent)}`}
                                                 />
                                             ))}
-                                        </div>
-                                        <div className="flex justify-center -mt-0.5">
-                                            {isExpanded ? <ChevronUp size={10} className="text-slate-600" /> : <ChevronDown size={10} className="text-slate-600" />}
                                         </div>
                                     </div>
                                 </div>
@@ -422,7 +438,7 @@ const TransferPicks: React.FC<TransferPicksProps> = ({ players, teams, fixtures,
                                                     {Math.round(p.transferIndex * 100)}
                                                 </span>
                                                 {/* Progress Bar */}
-                                                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                                <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-full ${p.transferIndex > 0.7 ? 'bg-green-500' : 'bg-blue-500'}`}
                                                         style={{ width: `${p.transferIndex * 100}%` }}

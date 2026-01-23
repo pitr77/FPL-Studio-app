@@ -9,6 +9,7 @@ import ResultChip from './ResultChip';
 import { calculateLeaguePositions, getDynamicDifficulty } from '../lib/fdrModel';
 import { computeTransferIndexForPlayers, TransferIndexResult } from '../lib/transferIndex';
 
+
 interface FixturesProps {
     fixtures: FPLFixture[];
     teams: FPLTeam[];
@@ -374,7 +375,9 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                                     <React.Fragment key={team.id}>
                                         <tr
                                             className={`hover:bg-slate-700/30 transition-all cursor-pointer group/row ${isExpanded ? 'bg-slate-700/20' : ''}`}
-                                            onClick={() => setExpandedTeamId(isExpanded ? null : team.id)}
+                                            onClick={() => {
+                                                setExpandedTeamId(isExpanded ? null : team.id);
+                                            }}
                                         >
                                             <td className="p-4 md:p-5 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700 shadow-xl w-20">
                                                 <span className={`text-xl font-black font-mono ${team.diffScore <= 10 ? 'text-green-400' :
@@ -555,7 +558,9 @@ const Fixtures: React.FC<FixturesProps> = ({ fixtures, teams, events, players })
                             <Calendar size={12} className="md:w-3.5 md:h-3.5" /> Schedule
                         </button>
                         <button
-                            onClick={() => setActiveTab('planner')}
+                            onClick={() => {
+                                setActiveTab('planner');
+                            }}
                             className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-2 rounded-md text-[10px] md:text-sm font-bold transition-all ${activeTab === 'planner' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                         >
                             <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" /> FDR Matrix
