@@ -25,7 +25,7 @@ interface AggregatedStats {
   median_points: number;
   consistency: number; // % of games with > 2 points
   matches_played: number;
-  points_history: number[]; // Array of scores
+  points_history: { points: number; round: number }[]; // Array of scores with rounds
 
   // Start Rate & Availability Metrics
   startRate: number; // % of GWs where player played (minutes > 0)
@@ -149,7 +149,10 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
             creativity: acc.creativity + toNum((match as any).creativity),
           }), { goals: 0, assists: 0, clean_sheets: 0, goals_conceded: 0, bonus: 0, total_points: 0, threat: 0, creativity: 0 });
 
-          const historyChronological = relevantHistory.map(h => h.total_points);
+          const historyNewestFirst = relevantHistory.map(h => ({
+            points: h.total_points,
+            round: h.round
+          })).reverse();
 
           // Started count (using starts field if available, otherwise fallback to minutes >= 60)
           const startsCount = relevantHistory.filter(h => (h as any).starts !== undefined ? (h as any).starts === 1 : h.minutes >= 60).length;
@@ -179,7 +182,7 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
             goals_conceded: agg.goals_conceded,
             def_pts_proxy: defPtsProxy,
             matches_played: relevantHistory.length,
-            points_history: historyChronological,
+            points_history: historyNewestFirst,
             ...agg
           };
         } catch (err) {
@@ -511,7 +514,7 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
                         <span className="hidden sm:inline">POINTS HISTORY</span>
                         <InfoIcon>
                           <strong className="block mb-1 text-white">Points History</strong>
-                          Match-by-match points in the selected period.
+                          Match-by-match points from newest to oldest in the selected period.
                         </InfoIcon>
                       </th>
                       <th className="px-1 py-2 sm:px-3 sm:py-4 text-right text-blue-400 font-bold cursor-pointer hover:text-white bg-slate-900 border-b border-slate-700" onClick={() => handleSort('median_points')}>MEDIAN <SortIcon colKey="median_points" /></th>
@@ -534,10 +537,26 @@ const PeriodAnalysis: React.FC<PeriodAnalysisProps> = ({ players, teams, events 
                           </td>
                           <td className="px-1 py-2 sm:px-3 sm:py-4 text-right font-mono text-slate-400 hidden sm:table-cell">{p.ownership}%</td>
                           <td className="px-1 py-2 sm:px-3 sm:py-4 sticky left-[110px] sm:static z-20 bg-slate-800 group-odd:bg-[#1f293d] group-hover:bg-[#252f44] border-r border-slate-700/50 sm:border-r-0 min-w-[120px] sm:min-w-0">
-                            <div className="flex justify-start gap-0.5 sm:gap-1">
-                              {p.points_history.map((pt, i) => (
-                                <div key={i} className={`w-5 h-5 sm:w-6 sm:h-6 flex-none flex items-center justify-center text-[9px] sm:text-[10px] font-bold rounded-md border ${pt >= 10 ? 'bg-purple-600 text-white' : pt >= 6 ? 'bg-green-600 text-white' : pt > 2 ? 'bg-slate-600 text-white' : 'bg-slate-800 text-slate-500'}`}>{pt}</div>
-                              ))}
+                            <div className="flex justify-start gap-0.5 sm:gap-1 mt-3 sm:mt-4">
+                              {p.points_history.map((h, i) => {
+                                const isFirst = i === 0;
+                                const isLast = i === p.points_history.length - 1;
+                                return (
+                                  <div key={i} className="relative group/badge flex flex-col items-center">
+                                    {(isFirst || isLast) && (
+                                      <div className="absolute top-[-1.15rem] left-0 w-full text-center">
+                                        <span className="text-[7px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-tighter">GW{h.round}</span>
+                                      </div>
+                                    )}
+                                    <div className={`w-5 h-5 sm:w-6 sm:h-6 flex-none flex items-center justify-center text-[9px] sm:text-[10px] font-bold rounded-md border ${h.points >= 10 ? 'bg-purple-600 text-white' : h.points >= 6 ? 'bg-green-600 text-white' : h.points > 2 ? 'bg-slate-600 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                                      {h.points}
+                                    </div>
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/badge:block w-max px-2 py-1 bg-slate-900 border border-slate-700 rounded text-[9px] text-white z-50 pointer-events-none">
+                                      GW {h.round}: {h.points} pts
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </td>
                           <td className="px-1 py-2 sm:px-3 sm:py-4 text-right font-mono font-bold text-blue-300">{p.median_points}</td>
