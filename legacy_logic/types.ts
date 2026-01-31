@@ -57,9 +57,7 @@ export interface BootstrapStatic {
   teams: FPLTeam[];
   events: FPLEvent[];
   element_types: { id: number; singular_name_short: string }[];
-  total_players: number;
 }
-
 
 export interface ScoutAdvice {
   analysis: string;
